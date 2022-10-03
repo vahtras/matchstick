@@ -32,4 +32,9 @@ class Digit:
             matches[3] = '━━'
             matches[5] = '┃'
             matches[6] = '━━'
+        elif self.value == 4:
+            matches[1] = '┃'
+            matches[2] = '┃'
+            matches[3] = '━━'
+            matches[5] = '┃'
         return DIGIT_TEMPLATE.format(*matches)

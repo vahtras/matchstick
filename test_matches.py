@@ -1,34 +1,44 @@
+import pytest
 from matches import Digit
 
 
-def test_one():
-    one = Digit(1)
-    assert str(one) == """
+@pytest.mark.parametrize(
+    'n, digit',
+    [
+        (1, """
  ──
 │  ┃
  ──
 │  ┃
  ──
 """
-
-
-def test_two():
-    two = Digit(2)
-    assert str(two) == """
+         ),
+        (2, """
  ━━
 │  ┃
  ━━
 ┃  │
  ━━
 """
-
-
-def test_three():
-    three = Digit(3)
-    assert str(three) == """
+         ),
+        (3, """
  ━━
 │  ┃
  ━━
 │  ┃
  ━━
 """
+         ),
+        (4, """
+ ──
+┃  ┃
+ ━━
+│  ┃
+ ──
+"""
+         ),
+    ],
+    ids=[1, 2, 3, 4]
+)
+def test_digit(n, digit):
+    assert str(Digit(n)) == digit
