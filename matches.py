@@ -37,4 +37,44 @@ class Digit:
             matches[2] = '┃'
             matches[3] = '━━'
             matches[5] = '┃'
+        elif self.value == 5:
+            matches[0] = '━━'
+            matches[1] = '┃'
+            matches[3] = '━━'
+            matches[5] = '┃'
+            matches[6] = '━━'
+        elif self.value == 6:
+            matches[0] = '━━'
+            matches[1] = '┃'
+            matches[3] = '━━'
+            matches[4] = '┃'
+            matches[5] = '┃'
+            matches[6] = '━━'
+        elif self.value == 7:
+            matches[0] = '━━'
+            matches[2] = '┃'
+            matches[5] = '┃'
+        elif self.value == 8:
+            matches[0] = '━━'
+            matches[1] = '┃'
+            matches[2] = '┃'
+            matches[3] = '━━'
+            matches[4] = '┃'
+            matches[5] = '┃'
+            matches[6] = '━━'
+        elif self.value == 9:
+            matches[0] = '━━'
+            matches[1] = '┃'
+            matches[2] = '┃'
+            matches[3] = '━━'
+            matches[5] = '┃'
+            matches[6] = '━━'
+        elif self.value == 0:
+            matches[0] = '━━'
+            matches[1] = '┃'
+            matches[2] = '┃'
+            matches[4] = '┃'
+            matches[5] = '┃'
+            matches[6] = '━━'
+
         return DIGIT_TEMPLATE.format(*matches)
