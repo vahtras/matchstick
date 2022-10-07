@@ -71,20 +71,15 @@ class Digit:
             return cls(value)
 
     def __repr__(self):
-        matches = ['──', '│', '│', '──', '│', '│', '──']
-        if self.value == 1:
-            matches[2] = '┃'
-            matches[5] = '┃'
-        elif self.value == 2:
-            matches[0] = '━━'
-            matches[2] = '┃'
-            matches[3] = '━━'
-            matches[4] = '┃'
-            matches[6] = '━━'
-        elif self.value == 3:
-            matches[0] = '━━'
-            matches[2] = '┃'
-            matches[3] = '━━'
-            matches[5] = '┃'
-            matches[6] = '━━'
-        return DIGIT_TEMPLATE.format(*matches)
+        return f'{self.value}'
+
+
+def ionized(digits: list[Digit], n: int = 1):
+    generated = []
+    if n == 1:
+        for i, d in enumerate(digits):
+            for d_ in d.ionized(n):
+                digits[i] = d_
+                generated.append([Digit(d.value) for d in digits])
+            digits[i] = d
+    return generated

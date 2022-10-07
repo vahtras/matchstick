@@ -4,7 +4,7 @@
 
 import pytest
 
-from digits import Digit
+from digits import Digit, ionized
 
 
 @pytest.mark.parametrize(
@@ -105,3 +105,11 @@ def test_digit_double_removals(value, removals):
 def test_from_occupied(occupied, value):
     digit = Digit.from_occupied(occupied)
     assert digit.value == value
+
+
+def test_pairs():
+    pairs = [Digit(6), Digit(7)]
+    assert ionized(pairs, n=1) == [
+            [Digit(5), Digit(7)],
+            [Digit(6), Digit(1)],
+    ]
