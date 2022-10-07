@@ -72,6 +72,48 @@ def test_digit_single_removals(value, removals):
 
 
 @pytest.mark.parametrize(
+    'value, additions',
+    [
+        (0, {8}),
+        (1, {7}),
+        (2, set()),
+        (3, {9}),
+        (4, set()),
+        (5, {6, 9}),
+        (6, {8}),
+        (7, set()),
+        (8, set()),
+        (9, {8}),
+    ]
+)
+def test_digit_single_additions(value, additions):
+    digit = Digit(value)
+    additions_values = {d.value for d in digit.anionized(1)}
+    assert additions_values == additions
+
+
+@pytest.mark.parametrize(
+    'value, excitations',
+    [
+        (0, {6, 9}),
+        (1, set()),
+        (2, {3}),
+        (3, {2, 5}),
+        (4, set()),
+        (5, {3}),
+        (6, {0, 9}),
+        (7, set()),
+        (8, set()),
+        (9, {0, 6}),
+    ]
+)
+def test_digit_single_excitations(value, excitations):
+    digit = Digit(value)
+    excitation_values = {d.value for d in digit.excitations(1)}
+    assert excitation_values == excitations
+
+
+@pytest.mark.parametrize(
     'value, removals',
     [
         (0, set()),

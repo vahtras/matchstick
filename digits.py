@@ -81,6 +81,45 @@ class Digit:
                         valid.add(digit)
         return valid
 
+    def anionized(self, n=1):
+        valid = set()
+        occupied = set(self._occupied)
+        virtual = set(range(7)) - occupied
+        if n == 1:
+            for vir in virtual:
+                digit = Digit.from_occupied(occupied | {vir})
+                if digit.value is not None:
+                    valid.add(digit)
+        if n == 2:
+            for occa in occupied:
+                for occb in occupied - {occa}:
+                    digit = Digit.from_occupied(
+                        occupied - {occa} - {occb}
+                    )
+                    if digit.value is not None:
+                        valid.add(digit)
+        return valid
+
+    def excitations(self, n=1):
+        valid = set()
+        occupied = set(self._occupied)
+        virtual = set(range(7)) - occupied
+        if n == 1:
+            for occ in occupied:
+                for vir in virtual:
+                    digit = Digit.from_occupied(occupied - {occ} | {vir})
+                    if digit.value is not None:
+                        valid.add(digit)
+        if n == 2:
+            for occa in occupied:
+                for occb in occupied - {occa}:
+                    digit = Digit.from_occupied(
+                        occupied - {occa} - {occb}
+                    )
+                    if digit.value is not None:
+                        valid.add(digit)
+        return valid
+
     @classmethod
     def from_occupied(cls, occupied):
         digit = Digit()
