@@ -35,39 +35,73 @@ def test_eight_value(value):
         (9, 6),
     ]
 )
-def test_eight_len(value, length):
+def test_len(value, length):
     ">>> "
-    eight = Digit(value)
-    assert len(eight) == length
+    digit = Digit(value)
+    assert len(digit) == length
 
 
-def test_eight_removals():
-    ">>> "
-    eight = Digit(8)
-    assert eight.removal_values() == {0, 6, 9}
+@pytest.mark.parametrize(
+    'value, removals',
+    [
+        (7, {1}),
+        (8, {0, 6, 9}),
+    ]
+)
+def test_digit_removals(value, removals):
+    digit = Digit(value)
+    assert digit.removal_values() == removals
 
 
-def test_one():
-    ">>> "
-    one = Digit(1)
-    expected = """
- ──
-│  ┃
- ──
-│  ┃
- ──
-"""
-    assert str(one) == expected
+@pytest.mark.parametrize(
+    'value, removals',
+    [
+        (0, set()),
+        (1, set()),
+        (2, set()),
+        (3, set()),
+        (4, set()),
+        (5, set()),
+        (6, {5}),
+        (7, {1}),
+        (8, {0, 6, 9}),
+        (9, {3, 5}),
+    ]
+)
+def test_digit_single_removals(value, removals):
+    digit = Digit(value)
+    removals_values = {d.value for d in digit.ionized(1)}
+    assert removals_values == removals
 
 
-def test_two():
-    ">>> "
-    two = Digit(2)
-    expected = """
- ━━
-│  ┃
- ━━
-┃  │
- ━━
-"""
-    assert str(two) == expected
+@pytest.mark.parametrize(
+    'value, removals',
+    [
+        (0, set()),
+        (1, set()),
+        (2, set()),
+        (3, {7}),
+        (4, {1}),
+        (5, set()),
+        (6, set()),
+        (7, set()),
+        (8, {2, 3, 5}),
+        (9, {4}),
+    ]
+)
+def test_digit_double_removals(value, removals):
+    digit = Digit(value)
+    removals_values = {d.value for d in digit.ionized(2)}
+    assert removals_values == removals
+
+
+@pytest.mark.parametrize(
+    'occupied, value',
+    [
+        ((0, 1, 2, 3, 4, 5, 6), 8),
+        ((0, 1, 2, 4, 5, 6), 0),
+    ]
+)
+def test_from_occupied(occupied, value):
+    digit = Digit.from_occupied(occupied)
+    assert digit.value == value
