@@ -8,16 +8,12 @@ from digits import Digit, ionized
 
 
 @pytest.mark.parametrize(
-    'value',
-    [
-        (0,),
-        (8,),
-    ]
+    'value', range(10)
 )
 def test_eight_value(value):
-    ">>>"
     eight = Digit(value)
     assert eight.value == value
+    assert eight.get_occupied() == Digit.occupied[value]
 
 
 @pytest.mark.parametrize(
@@ -36,21 +32,22 @@ def test_eight_value(value):
     ]
 )
 def test_len(value, length):
-    ">>> "
     digit = Digit(value)
     assert len(digit) == length
 
 
 @pytest.mark.parametrize(
-    'value, removals',
+    'value, valid_one_removed',
     [
+        (0, set()),
         (7, {1}),
         (8, {0, 6, 9}),
+        (9, {3, 5}),
     ]
 )
-def test_digit_removals(value, removals):
+def test_digit_removals(value, valid_one_removed):
     digit = Digit(value)
-    assert digit.removal_values() == removals
+    assert digit.removal_values() == valid_one_removed
 
 
 @pytest.mark.parametrize(
@@ -100,10 +97,12 @@ def test_digit_double_removals(value, removals):
     [
         ((0, 1, 2, 3, 4, 5, 6), 8),
         ((0, 1, 2, 4, 5, 6), 0),
+        ((0, 1, 2, 4, 5), None),
     ]
 )
 def test_from_occupied(occupied, value):
     digit = Digit.from_occupied(occupied)
+    assert digit.get_occupied() == occupied
     assert digit.value == value
 
 

@@ -20,55 +20,72 @@ class Digit:
         8: (0, 1, 2, 3, 4, 5, 6),
         9: (0, 1, 2, 3, 5, 6),
     }
-    occupied_reverse = {frozenset(v): k for k, v in occupied.items()}
+    lookup_value = {frozenset(v): k for k, v in occupied.items()}
     removals = {
         7: {1},
         8: {0, 6, 9},
         9: {3, 5},
     }
 
-    def __init__(self, value):
-        self.value = value
+    def __init__(self, value=None):
+        if value is not None:
+            self._occupied = Digit.occupied.get(value)
+        else:
+            self._occupied = None
+
+    @property
+    def value(self):
+        return self.lookup_value.get(frozenset(self._occupied))
 
     def __len__(self):
-        return len(self.occupied[self.value])
+        return len(self._occupied)
 
     def __eq__(self, other):
         return self.value == other.value
 
     def __hash__(self):
-        return self.value
+        return hash(self._occupied)
+
+    def get_occupied(self):
+        return self._occupied
+
+    def set_occupied(self, occupied):
+        self._occupied = tuple(occupied)
 
     def removal_values(self):
-        """
-        tbd
-        """
-        return self.removals[self.value]
+        values = set()
+        for i, n in enumerate(self._occupied):
+            occ = frozenset(set(self._occupied) - {n})
+            if (d := Digit.lookup_value.get(occ)) is not None:
+                values.add(d)
+        return values
 
     def _removals(self):
         return frozenset(Digit(n) for n in self.removals[self.value])
 
     def ionized(self, n=1):
-        occupied = set(self.occupied[self.value])
         valid = set()
+        occupied = set(self._occupied)
         if n == 1:
-            for occ in occupied:
-                if digit := Digit.from_occupied(occupied - {occ}):
+            for occ in self._occupied:
+                digit = Digit.from_occupied(occupied - {occ})
+                if digit.value is not None:
                     valid.add(digit)
         if n == 2:
             for occa in occupied:
                 for occb in occupied - {occa}:
-                    if digit := Digit.from_occupied(
+                    digit = Digit.from_occupied(
                         occupied - {occa} - {occb}
-                    ):
+                    )
+                    if digit.value is not None:
                         valid.add(digit)
         return valid
 
     @classmethod
     def from_occupied(cls, occupied):
-        value = cls.occupied_reverse.get(frozenset(occupied))
-        if value is not None:
-            return cls(value)
+        digit = Digit()
+        digit.set_occupied(occupied)
+        return digit
 
     def __repr__(self):
         return f'{self.value}'
