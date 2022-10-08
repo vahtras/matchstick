@@ -1,10 +1,6 @@
-"""
->>>
-"""
-
 import pytest
 
-from digits import Digit, ionized
+from digits import Digit, ionized, excite
 
 
 @pytest.mark.parametrize(
@@ -148,9 +144,31 @@ def test_from_occupied(occupied, value):
     assert digit.value == value
 
 
-def test_pairs():
+def test_ionize_pairs():
     pairs = [Digit(6), Digit(7)]
     assert ionized(pairs, n=1) == [
             [Digit(5), Digit(7)],
             [Digit(6), Digit(1)],
     ]
+
+
+@pytest.mark.parametrize(
+    'value, excitation_values',
+    [
+        (0, {6, 9}),
+        (1, set()),
+        (2, {3}),
+        (3, {2, 5}),
+        (4, set()),
+        (5, {3}),
+        (6, {0, 9}),
+        (7, set()),
+        (8, set()),
+        (9, {0, 6}),
+    ]
+)
+def test_excite_singles(value, excitation_values):
+    singles = [Digit(value)]
+    singles_excited = excite(singles)
+    singles_excited_values = {s.pop().value for s in singles_excited}
+    assert singles_excited_values == excitation_values

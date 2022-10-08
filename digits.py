@@ -52,6 +52,9 @@ class Digit:
     def set_occupied(self, occupied):
         self._occupied = tuple(occupied)
 
+    def get_virtual(self):
+        return set(range(7)) - set(self._occupied)
+
     def removal_values(self):
         values = set()
         for i, n in enumerate(self._occupied):
@@ -138,4 +141,31 @@ def ionized(digits: list[Digit], n: int = 1):
                 digits[i] = d_
                 generated.append([Digit(d.value) for d in digits])
             digits[i] = d
+    return generated
+
+
+def excite(digits: list[Digit], n: int = 1):
+    generated = []
+    if n == 1:
+        for i, di in enumerate(digits):
+            occupied = set(di.get_occupied())
+            for j, dj in enumerate(digits):
+                virtual = set(dj.get_virtual())
+                for occ in occupied:
+                    for vir in virtual:
+                        if i == j:
+                            digits[i] = Digit.from_occupied(
+                                occupied - {occ} | {vir}
+                            )
+                        else:
+                            raise NotImplementedError
+                        if all(d.value is not None for d in digits):
+                            generated.append(
+                                {
+                                    Digit.from_occupied(d._occupied)
+                                    for d in digits
+                                }
+                            )
+                        digits[j] = dj
+                        digits[i] = di
     return generated
