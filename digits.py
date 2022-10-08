@@ -145,26 +145,29 @@ def ionized(digits: list[Digit], n: int = 1):
 
 
 def excite(digits: list[Digit], n: int = 1):
-    generated = []
+    generated = set()
     if n == 1:
         for i, di in enumerate(digits):
-            occupied = set(di.get_occupied())
+            occupied_i = set(di.get_occupied())
             for j, dj in enumerate(digits):
-                virtual = set(dj.get_virtual())
-                for occ in occupied:
-                    for vir in virtual:
+                occupied_j = set(dj.get_occupied())
+                virtual_j = set(dj.get_virtual())
+                for occ in occupied_i:
+                    for vir in virtual_j:
                         if i == j:
                             digits[i] = Digit.from_occupied(
-                                occupied - {occ} | {vir}
+                                occupied_i - {occ} | {vir}
                             )
                         else:
-                            raise NotImplementedError
+                            digits[i] = Digit.from_occupied(occupied_i - {occ})
+                            digits[j] = Digit.from_occupied(occupied_j | {vir})
+
                         if all(d.value is not None for d in digits):
-                            generated.append(
-                                {
+                            generated.add(
+                                tuple(
                                     Digit.from_occupied(d._occupied)
                                     for d in digits
-                                }
+                                )
                             )
                         digits[j] = dj
                         digits[i] = di

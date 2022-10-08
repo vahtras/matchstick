@@ -170,5 +170,18 @@ def test_ionize_pairs():
 def test_excite_singles(value, excitation_values):
     singles = [Digit(value)]
     singles_excited = excite(singles)
-    singles_excited_values = {s.pop().value for s in singles_excited}
+    singles_excited_values = {s[0].value for s in singles_excited}
     assert singles_excited_values == excitation_values
+
+
+@pytest.mark.parametrize(
+    'values, excitation_values',
+    [
+        ([0, 0], {(6, 0), (9, 0), (0, 6), (0, 9)}),
+    ]
+)
+def test_excite_pairs(values, excitation_values):
+    digits = [Digit(v) for v in values]
+    excited = excite(digits)
+    expected = {tuple(Digit(d) for d in seq) for seq in excitation_values}
+    assert excited == expected
