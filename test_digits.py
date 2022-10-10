@@ -1,15 +1,24 @@
 import pytest
 
-from digits import Digit, ionized, excite
+from digits import Digit, ionized, excite, Operator, token
 
 
 @pytest.mark.parametrize(
     'value', range(10)
 )
 def test_eight_value(value):
-    eight = Digit(value)
-    assert eight.value == value
-    assert eight.get_occupied() == Digit.occupied[value]
+    digit = Digit(value)
+    assert digit.value == value
+    assert digit.get_occupied() == Digit.occupied[value]
+
+
+@pytest.mark.parametrize(
+    'value', ['-', '+', '='],
+)
+def test_op_value(value):
+    op = Operator(value)
+    assert op.value == value
+    assert op.get_occupied() == Operator.occupied[value]
 
 
 @pytest.mark.parametrize(
@@ -27,8 +36,21 @@ def test_eight_value(value):
         (9, 6),
     ]
 )
-def test_len(value, length):
+def test_len_digit(value, length):
     digit = Digit(value)
+    assert len(digit) == length
+
+
+@pytest.mark.parametrize(
+    'value, length',
+    [
+        ('-', 0),
+        ('+', 1),
+        ('=', 1),
+    ]
+)
+def test_len_op(value, length):
+    digit = Operator(value)
     assert len(digit) == length
 
 
@@ -68,6 +90,20 @@ def test_digit_single_removals(value, removals):
 
 
 @pytest.mark.parametrize(
+    'value, removals',
+    [
+        ('-', set()),
+        ('+', {'-'}),
+        ('=', {'-'}),
+    ]
+)
+def test_ops_single_removals(value, removals):
+    op = Operator(value)
+    removals_values = {d.value for d in op.ionized(1)}
+    assert removals_values == removals
+
+
+@pytest.mark.parametrize(
     'value, additions',
     [
         (0, {8}),
@@ -89,6 +125,20 @@ def test_digit_single_additions(value, additions):
 
 
 @pytest.mark.parametrize(
+    'value, additions',
+    [
+        ('-', {'+', '='}),
+        ('+', set()),
+        ('=', set()),
+    ]
+)
+def test_op_single_additions(value, additions):
+    op = Operator(value)
+    additions_values = {d.value for d in op.anionized(1)}
+    assert additions_values == additions
+
+
+@pytest.mark.parametrize(
     'value, excitations',
     [
         (0, {6, 9}),
@@ -106,6 +156,20 @@ def test_digit_single_additions(value, additions):
 def test_digit_single_excitations(value, excitations):
     digit = Digit(value)
     excitation_values = {d.value for d in digit.excitations(1)}
+    assert excitation_values == excitations
+
+
+@pytest.mark.parametrize(
+    'value, excitations',
+    [
+        ('-', set()),
+        ('+', {'='}),
+        ('=', {'+'}),
+    ]
+)
+def test_opg_single_excitations(value, excitations):
+    op = Operator(value)
+    excitation_values = {d.value for d in op.excitations(1)}
     assert excitation_values == excitations
 
 
@@ -138,18 +202,41 @@ def test_digit_double_removals(value, removals):
         ((0, 1, 2, 4, 5), None),
     ]
 )
-def test_from_occupied(occupied, value):
+def test_digit_from_occupied(occupied, value):
     digit = Digit.from_occupied(occupied)
     assert digit.get_occupied() == occupied
     assert digit.value == value
 
 
-def test_ionize_pairs():
-    pairs = [Digit(6), Digit(7)]
-    assert ionized(pairs, n=1) == [
-            [Digit(5), Digit(7)],
-            [Digit(6), Digit(1)],
+@pytest.mark.parametrize(
+    'occupied, value',
+    [
+        ((), '-'),
+        ((0,), '+'),
+        ((1,), '='),
     ]
+)
+def test_op_from_occupied(occupied, value):
+    op = Operator.from_occupied(occupied)
+    assert op.get_occupied() == occupied
+    assert op.value == value
+
+
+@pytest.mark.parametrize(
+    'seq, expected',
+    [
+        ([Digit(6)], {(Digit(5),)}),
+        ([Digit(7)], {(Digit(1),)}),
+        ([Digit(6), Digit(7)], {(Digit(5), Digit(7)), (Digit(6), Digit(1))}),
+        ([Operator('+')], {(Operator('-'),)}),
+        (
+            [Digit(6), Operator('+')],
+            {(Digit(5), Operator('+')), (Digit(6), Operator('-'))}
+        ),
+    ]
+)
+def test_ionize_seq(seq, expected):
+    assert ionized(seq, n=1) == expected
 
 
 @pytest.mark.parametrize(
@@ -165,10 +252,13 @@ def test_ionize_pairs():
         (7, set()),
         (8, set()),
         (9, {0, 6}),
+        ('-', set()),
+        ('+', {'='}),
+        ('=', {'+'}),
     ]
 )
 def test_excite_singles(value, excitation_values):
-    singles = [Digit(value)]
+    singles = [token(value)]
     singles_excited = excite(singles)
     singles_excited_values = {s[0].value for s in singles_excited}
     assert singles_excited_values == excitation_values
@@ -230,7 +320,10 @@ def test_excite_singles(value, excitation_values):
         ([7, 9], {(7, 0), (7, 6), (1, 8)}),
         ([8, 8], {}),
         ([8, 9], {(8, 0), (8, 6), (0, 8), (6, 8), (9, 8)}),
-        ([9, 9], {(0, 9), (6, 9), (9, 0), (9, 6), (3, 8), (5, 8), (8, 3), (8, 5)}),
+        (
+            [9, 9],
+            {(0, 9), (6, 9), (9, 0), (9, 6), (3, 8), (5, 8), (8, 3), (8, 5)}
+        ),
     ]
 )
 def test_excite_pairs(values, excitation_values):

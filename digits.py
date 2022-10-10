@@ -1,13 +1,126 @@
 DIGIT_TEMPLATE = """
  {0}
-{1}  {2}
+
  {3}
 {4}  {5}
  {6}
 """
 
 
-class Digit:
+class Token:
+    occupied = {}
+    lookup_value = {}
+
+    def __init__(self, value=None):
+        if value is not None:
+            self._occupied = self.__class__.occupied.get(value)
+        else:
+            self._occupied = None
+
+    @classmethod
+    def from_occupied(cls, occupied):
+        token = cls()
+        token.set_occupied(occupied)
+        return token
+
+    def set_occupied(self, occupied):
+        self._occupied = tuple(occupied)
+
+    @property
+    def value(self):
+        return self.lookup_value.get(frozenset(self._occupied))
+
+    def get_occupied(self):
+        return self._occupied
+
+    def get_virtual(self):
+        return set(range(7)) - set(self._occupied)
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __hash__(self):
+        return hash(self._occupied)
+
+    def __len__(self):
+        return len(self._occupied)
+
+    def __str__(self):
+        return f'{self.value}'
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.value})'
+
+    def ionized(self, n=1):
+        valid = set()
+        occupied = set(self._occupied)
+        if n == 1:
+            for occ in self._occupied:
+                digit = self.__class__.from_occupied(occupied - {occ})
+                if digit.value is not None:
+                    valid.add(digit)
+        if n == 2:
+            for occa in occupied:
+                for occb in occupied - {occa}:
+                    digit = Digit.from_occupied(
+                        occupied - {occa} - {occb}
+                    )
+                    if digit.value is not None:
+                        valid.add(digit)
+        return valid
+
+    def anionized(self, n=1):
+        valid = set()
+        occupied = set(self._occupied)
+        virtual = set(range(7)) - occupied
+        if n == 1:
+            for vir in virtual:
+                token = self.__class__.from_occupied(occupied | {vir})
+                if token.value is not None:
+                    valid.add(token)
+        if n == 2:
+            for occa in occupied:
+                for occb in occupied - {occa}:
+                    token = self.__class__.from_occupied(
+                        occupied - {occa} - {occb}
+                    )
+                    if token.value is not None:
+                        valid.add(token)
+        return valid
+
+    def excitations(self, n=1):
+        valid = set()
+        occupied = set(self._occupied)
+        virtual = set(range(7)) - occupied
+        if n == 1:
+            for occ in occupied:
+                for vir in virtual:
+                    token = self.__class__.from_occupied(
+                        occupied - {occ} | {vir}
+                    )
+                    if token.value is not None:
+                        valid.add(token)
+        if n == 2:
+            for occa in occupied:
+                for occb in occupied - {occa}:
+                    token = self.__class__.from_occupied(
+                        occupied - {occa} - {occb}
+                    )
+                    if token.value is not None:
+                        valid.add(token)
+        return valid
+
+
+class Operator(Token):
+    occupied = {
+        '-': (),
+        '+': (0,),
+        '=': (1,),
+    }
+    lookup_value = {frozenset(v): k for k, v in occupied.items()}
+
+
+class Digit(Token):
     occupied = {
         0: (0, 1, 2, 4, 5, 6),
         1: (2, 5),
@@ -27,34 +140,6 @@ class Digit:
         9: {3, 5},
     }
 
-    def __init__(self, value=None):
-        if value is not None:
-            self._occupied = Digit.occupied.get(value)
-        else:
-            self._occupied = None
-
-    @property
-    def value(self):
-        return self.lookup_value.get(frozenset(self._occupied))
-
-    def __len__(self):
-        return len(self._occupied)
-
-    def __eq__(self, other):
-        return self.value == other.value
-
-    def __hash__(self):
-        return hash(self._occupied)
-
-    def get_occupied(self):
-        return self._occupied
-
-    def set_occupied(self, occupied):
-        self._occupied = tuple(occupied)
-
-    def get_virtual(self):
-        return set(range(7)) - set(self._occupied)
-
     def removal_values(self):
         values = set()
         for i, n in enumerate(self._occupied):
@@ -63,112 +148,55 @@ class Digit:
                 values.add(d)
         return values
 
-    def _removals(self):
-        return frozenset(Digit(n) for n in self.removals[self.value])
 
-    def ionized(self, n=1):
-        valid = set()
-        occupied = set(self._occupied)
-        if n == 1:
-            for occ in self._occupied:
-                digit = Digit.from_occupied(occupied - {occ})
-                if digit.value is not None:
-                    valid.add(digit)
-        if n == 2:
-            for occa in occupied:
-                for occb in occupied - {occa}:
-                    digit = Digit.from_occupied(
-                        occupied - {occa} - {occb}
-                    )
-                    if digit.value is not None:
-                        valid.add(digit)
-        return valid
-
-    def anionized(self, n=1):
-        valid = set()
-        occupied = set(self._occupied)
-        virtual = set(range(7)) - occupied
-        if n == 1:
-            for vir in virtual:
-                digit = Digit.from_occupied(occupied | {vir})
-                if digit.value is not None:
-                    valid.add(digit)
-        if n == 2:
-            for occa in occupied:
-                for occb in occupied - {occa}:
-                    digit = Digit.from_occupied(
-                        occupied - {occa} - {occb}
-                    )
-                    if digit.value is not None:
-                        valid.add(digit)
-        return valid
-
-    def excitations(self, n=1):
-        valid = set()
-        occupied = set(self._occupied)
-        virtual = set(range(7)) - occupied
-        if n == 1:
-            for occ in occupied:
-                for vir in virtual:
-                    digit = Digit.from_occupied(occupied - {occ} | {vir})
-                    if digit.value is not None:
-                        valid.add(digit)
-        if n == 2:
-            for occa in occupied:
-                for occb in occupied - {occa}:
-                    digit = Digit.from_occupied(
-                        occupied - {occa} - {occb}
-                    )
-                    if digit.value is not None:
-                        valid.add(digit)
-        return valid
-
-    @classmethod
-    def from_occupied(cls, occupied):
-        digit = Digit()
-        digit.set_occupied(occupied)
-        return digit
-
-    def __repr__(self):
-        return f'{self.value}'
+def token(value):
+    if isinstance(value, int):
+        return Digit(value)
+    elif value in ('+-='):
+        return Operator(value)
+    else:
+        raise ValueError
 
 
-def ionized(digits: list[Digit], n: int = 1):
-    generated = []
+def ionized(tokens: list[Token], n: int = 1):
+    generated = set()
     if n == 1:
-        for i, d in enumerate(digits):
+        for i, d in enumerate(tokens):
             for d_ in d.ionized(n):
-                digits[i] = d_
-                generated.append([Digit(d.value) for d in digits])
-            digits[i] = d
+                tokens[i] = d_
+                if all(t.value is not None for t in tokens):
+                    generated.add(tuple(d.__class__(d.value) for d in tokens))
+                tokens[i] = d
     return generated
 
 
-def excite(digits: list[Digit], n: int = 1):
+def excite(tokens: list[Token], n: int = 1):
     generated = set()
     if n == 1:
-        for i, di in enumerate(digits):
+        for i, di in enumerate(tokens):
+            cli = di.__class__
             occupied_i = set(di.get_occupied())
-            for j, dj in enumerate(digits):
+            for j, dj in enumerate(tokens):
                 occupied_j = set(dj.get_occupied())
+                clj = dj.__class__
                 virtual_j = set(dj.get_virtual())
                 for occ in occupied_i:
                     for vir in virtual_j:
                         if i == j:
-                            digits[i] = Digit.from_occupied(
+                            tokens[i] = cli.from_occupied(
                                 occupied_i - {occ} | {vir}
                             )
                         else:
-                            digits[i] = Digit.from_occupied(occupied_i - {occ})
-                            digits[j] = Digit.from_occupied(occupied_j | {vir})
+                            tokens[i] = cli.from_occupied(occupied_i - {occ})
+                            tokens[j] = clj.from_occupied(occupied_j | {vir})
 
-                        if all(d.value is not None for d in digits):
+                        if all(d.value is not None for d in tokens):
                             generated.add(
                                 tuple(
-                                    Digit.from_occupied(d._occupied)
-                                    for d in digits
+                                    d.__class__.from_occupied(d._occupied)
+                                    for d in tokens
                                 )
                             )
-                        digits[j] = dj
-                        digits[i] = di
+                        tokens[j] = dj
+                        tokens[i] = di
     return generated
