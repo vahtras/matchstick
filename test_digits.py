@@ -1,6 +1,6 @@
 import pytest
 
-from digits import Digit, ionized, excite, Operator, token
+from digits import token, Operator, Digit, move_matches, remove_matches
 
 
 @pytest.mark.parametrize(
@@ -85,7 +85,7 @@ def test_digit_removals(value, valid_one_removed):
 )
 def test_digit_single_removals(value, removals):
     digit = Digit(value)
-    removals_values = {d.value for d in digit.ionized(1)}
+    removals_values = {d.value for d in digit.remove_matches(1)}
     assert removals_values == removals
 
 
@@ -99,7 +99,7 @@ def test_digit_single_removals(value, removals):
 )
 def test_ops_single_removals(value, removals):
     op = Operator(value)
-    removals_values = {d.value for d in op.ionized(1)}
+    removals_values = {d.value for d in op.remove_matches(1)}
     assert removals_values == removals
 
 
@@ -120,7 +120,7 @@ def test_ops_single_removals(value, removals):
 )
 def test_digit_single_additions(value, additions):
     digit = Digit(value)
-    additions_values = {d.value for d in digit.anionized(1)}
+    additions_values = {d.value for d in digit.add_matches(1)}
     assert additions_values == additions
 
 
@@ -134,7 +134,7 @@ def test_digit_single_additions(value, additions):
 )
 def test_op_single_additions(value, additions):
     op = Operator(value)
-    additions_values = {d.value for d in op.anionized(1)}
+    additions_values = {d.value for d in op.add_matches(1)}
     assert additions_values == additions
 
 
@@ -155,7 +155,7 @@ def test_op_single_additions(value, additions):
 )
 def test_digit_single_excitations(value, excitations):
     digit = Digit(value)
-    excitation_values = {d.value for d in digit.excitations(1)}
+    excitation_values = {d.value for d in digit.move_matches(1)}
     assert excitation_values == excitations
 
 
@@ -169,7 +169,7 @@ def test_digit_single_excitations(value, excitations):
 )
 def test_opg_single_excitations(value, excitations):
     op = Operator(value)
-    excitation_values = {d.value for d in op.excitations(1)}
+    excitation_values = {d.value for d in op.move_matches(1)}
     assert excitation_values == excitations
 
 
@@ -190,7 +190,7 @@ def test_opg_single_excitations(value, excitations):
 )
 def test_digit_double_removals(value, removals):
     digit = Digit(value)
-    removals_values = {d.value for d in digit.ionized(2)}
+    removals_values = {d.value for d in digit.remove_matches(2)}
     assert removals_values == removals
 
 
@@ -236,7 +236,7 @@ def test_op_from_occupied(occupied, value):
     ]
 )
 def test_ionize_seq(seq, expected):
-    assert ionized(seq, n=1) == expected
+    assert remove_matches(seq, n=1) == expected
 
 
 @pytest.mark.parametrize(
@@ -259,7 +259,7 @@ def test_ionize_seq(seq, expected):
 )
 def test_excite_singles(value, excitation_values):
     singles = [token(value)]
-    singles_excited = excite(singles)
+    singles_excited = move_matches(singles)
     singles_excited_values = {s[0].value for s in singles_excited}
     assert singles_excited_values == excitation_values
 
@@ -277,7 +277,7 @@ def test_excite_singles(value, excitation_values):
         ([0, 7], {(6, 7), (9, 7), (8, 1), }),
         ([0, 8], {(6, 8), (9, 8), (8, 0), (8, 9), (8, 6)}),
         ([0, 9], {(6, 9), (9, 9), (0, 0), (0, 6), (8, 3), (8, 5)}),
-        ([1, 1], {}),
+        ([1, 1], set()),
         ([1, 2], {(1, 3)}),
         ([1, 3], {(1, 2), (1, 5)}),
         ([1, 5], {(1, 3)}),
@@ -300,11 +300,11 @@ def test_excite_singles(value, excitation_values):
         ([3, 7], {(2, 7), (5, 7), (9, 1), }),
         ([3, 8], {(2, 8), (5, 8), (9, 0), (9, 6), (9, 9)}),
         ([3, 9], {(2, 9), (5, 9), (3, 0), (3, 6), (9, 3), (9, 5)}),
-        ([4, 4], {}),
+        ([4, 4], set()),
         ([4, 5], {(4, 3)}),
         ([4, 6], {(4, 0), (4, 9)}),
-        ([4, 7], {}),
-        ([4, 8], {}),
+        ([4, 7], set()),
+        ([4, 8], set()),
         ([4, 9], {(4, 0), (4, 6)}),
         ([5, 5], {(3, 5), (5, 3)}),
         ([5, 6], {(3, 6), (5, 0), (5, 9), (6, 5), (9, 5)}),
@@ -315,19 +315,21 @@ def test_excite_singles(value, excitation_values):
         ([6, 7], {(0, 7), (9, 7), (8, 1)}),
         ([6, 8], {(0, 8), (9, 8), (8, 0), (8, 6), (8, 9)}),
         ([6, 9], {(0, 9), (9, 9), (6, 0), (6, 6), (5, 8), (8, 3), (8, 5)}),
-        ([7, 7], {}),
-        ([7, 8], {}),
+        ([7, 7], set()),
+        ([7, 8], set()),
         ([7, 9], {(7, 0), (7, 6), (1, 8)}),
-        ([8, 8], {}),
+        ([8, 8], set()),
         ([8, 9], {(8, 0), (8, 6), (0, 8), (6, 8), (9, 8)}),
         (
             [9, 9],
             {(0, 9), (6, 9), (9, 0), (9, 6), (3, 8), (5, 8), (8, 3), (8, 5)}
         ),
+        (['-'], set()),
+        ([1, '='], {(1, '+'), (7, '-')}),
     ]
 )
 def test_excite_pairs(values, excitation_values):
-    digits = [Digit(v) for v in values]
-    excited = excite(digits)
-    expected = {tuple(Digit(d) for d in seq) for seq in excitation_values}
+    tokens = [token(v) for v in values]
+    excited = move_matches(tokens)
+    expected = {tuple(token(d) for d in seq) for seq in excitation_values}
     assert excited == expected

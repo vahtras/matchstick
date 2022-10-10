@@ -51,7 +51,7 @@ class Token:
     def __repr__(self):
         return f'{self.__class__.__name__}({self.value})'
 
-    def ionized(self, n=1):
+    def remove_matches(self, n=1):
         valid = set()
         occupied = set(self._occupied)
         if n == 1:
@@ -69,7 +69,7 @@ class Token:
                         valid.add(digit)
         return valid
 
-    def anionized(self, n=1):
+    def add_matches(self, n=1):
         valid = set()
         occupied = set(self._occupied)
         virtual = set(range(7)) - occupied
@@ -88,7 +88,7 @@ class Token:
                         valid.add(token)
         return valid
 
-    def excitations(self, n=1):
+    def move_matches(self, n=1):
         valid = set()
         occupied = set(self._occupied)
         virtual = set(range(7)) - occupied
@@ -158,11 +158,11 @@ def token(value):
         raise ValueError
 
 
-def ionized(tokens: list[Token], n: int = 1):
+def remove_matches(tokens: list[Token], n: int = 1):
     generated = set()
     if n == 1:
         for i, d in enumerate(tokens):
-            for d_ in d.ionized(n):
+            for d_ in d.remove_matches(n):
                 tokens[i] = d_
                 if all(t.value is not None for t in tokens):
                     generated.add(tuple(d.__class__(d.value) for d in tokens))
@@ -170,7 +170,7 @@ def ionized(tokens: list[Token], n: int = 1):
     return generated
 
 
-def excite(tokens: list[Token], n: int = 1):
+def move_matches(tokens: list[Token], n: int = 1):
     generated = set()
     if n == 1:
         for i, di in enumerate(tokens):
