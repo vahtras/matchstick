@@ -150,12 +150,13 @@ class Digit(Token):
 
 
 def token(value):
-    if isinstance(value, int):
-        return Digit(value)
-    elif value in ('+-='):
-        return Operator(value)
-    else:
-        raise ValueError
+    try:
+        return Digit(int(value))
+    except ValueError:
+        if value in ('+-='):
+            return Operator(value)
+        else:
+            raise ValueError
 
 
 def remove_matches(tokens: list[Token], n: int = 1):
@@ -200,3 +201,26 @@ def move_matches(tokens: list[Token], n: int = 1):
                         tokens[j] = dj
                         tokens[i] = di
     return generated
+
+
+if __name__ == "__main__":
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--single', action='store_true', default=True,
+        help='List single replacements of expression'
+    )
+
+    args = parser.parse_args()
+
+    if args.single:
+        print("Single replacement of expression")
+        while expr := input("Expressions: "):
+            expr = expr.strip().replace(' ', '')
+            tokens = [token(c) for c in expr]
+            # print(tokens)
+            moves = move_matches(tokens)
+            for m in moves:
+                print(" ".join(str(t) for t in m))
