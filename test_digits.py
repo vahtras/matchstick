@@ -1,6 +1,9 @@
 import pytest
 
-from digits import token, Operator, Digit, move_matches, remove_matches
+from digits import (
+    token, Operator, Digit, move_matches, remove_matches, scan,
+    valid_equations
+)
 
 
 @pytest.mark.parametrize(
@@ -333,3 +336,27 @@ def test_excite_pairs(values, excitation_values):
     excited = move_matches(tokens)
     expected = {tuple(token(d) for d in seq) for seq in excitation_values}
     assert excited == expected
+
+
+@pytest.mark.parametrize(
+    'input, expected',
+    [
+        ('1', [Digit(1)]),
+        ('12', [Digit(1), Digit(2)]),
+        ('1 + 2', [Digit(1), Operator('+'), Digit(2)]),
+    ]
+)
+def test_scan_tokens(input, expected):
+    assert scan(input) == expected
+
+
+@pytest.mark.parametrize(
+    'n, expected',
+    [
+        (2, 10),
+        (3, 220),
+    ]
+)
+def test_valid_equations(n, expected):
+    equations = valid_equations(n)
+    assert len(equations) == expected

@@ -1,10 +1,8 @@
-DIGIT_TEMPLATE = """
- {0}
-
- {3}
-{4}  {5}
- {6}
-"""
+import collections
+import pathlib
+from PIL import Image
+import tempfile
+import zipfile
 
 
 class Token:
@@ -203,24 +201,133 @@ def move_matches(tokens: list[Token], n: int = 1):
     return generated
 
 
+def scan(expr):
+    expr = expr.strip().replace(' ', '')
+    tokens = [token(c) for c in expr]
+    return tokens
+
+
+def valid_equations(n):
+    eqs = set()
+    if n == 2:
+        for n in range(10):
+            eqs.add(f'{n} = {n}')
+    if n == 3:
+        for i in range(10):
+            for j in range(10-i):
+                eqs.add(f'{i} + {j} = {i+j}')
+                eqs.add(f'{i} = {i+j} - {j}')
+                eqs.add(f'{i+j} = {i} + {j}')
+                eqs.add(f'{i+j} - {j} = {i}')
+    return eqs
+
+
+def map_solutions(n):
+    eqs = valid_equations(n)
+    solutions = collections.defaultdict(set)
+    for eq in eqs:
+        tokens = scan(eq)
+        riddles = move_matches(tokens)
+        for r in riddles:
+            key = " ".join(str(token) for token in r)
+            if collections.Counter(key)['='] == 1:
+                solutions[key].add(eq)
+    return solutions
+
+
+def generate_image(expr):
+    expr = expr.strip().replace(' ', '')
+    image_dir = pathlib.Path('img')
+    images = [Image.open(image_dir/f'm{c}.jpg') for c in expr]
+    images = [crop(image) for image in images]
+    hsize = sum(image.size[0] for image in images)
+    vsize = max(image.size[1] for image in images)
+    mode = images[0].mode
+    joined_image = Image.new(mode, (hsize, vsize))
+    offset = 0
+    for image in images:
+        joined_image.paste(image, (offset, 0))
+        offset += image.size[0]
+    return joined_image
+
+
+def crop(img, keep=300):
+    width, height = img.size
+    left = width//2 - keep//2
+    right = width//2 + keep//2
+    dim = (left, 0, right, height)
+    imgc = img.crop(dim)
+    return imgc
+
+
 if __name__ == "__main__":
 
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--single', action='store_true', default=True,
-        help='List single replacements of expression'
+        '--single-moves', action='store_true',
+        help='List valid single replacements of expression'
+    )
+    parser.add_argument(
+        '--list-equalities', action='store_true',
+        help='List equalities of given dimension'
+    )
+    parser.add_argument(
+        '--zip-equalities', action='store_true',
+        help='Save equality images of given dimension as zip'
+    )
+    parser.add_argument(
+        '--number-of-digits', default=2, type=int,
+        help='Number of digits in expression'
+    )
+
+    parser.add_argument(
+        '--map-solutions', action='store_true',
+        help='Map riddle to solutions'
+    )
+
+    parser.add_argument(
+        '--matchstick-image', action='store_true',
+        help='Display matchstick image of expression'
     )
 
     args = parser.parse_args()
 
-    if args.single:
-        print("Single replacement of expression")
-        while expr := input("Expressions: "):
-            expr = expr.strip().replace(' ', '')
-            tokens = [token(c) for c in expr]
-            # print(tokens)
+    if args.list_equalities:
+        for eq in valid_equations(args.number_of_digits):
+            print(eq)
+    if args.zip_equalities:
+        zip_file = f'equalities-{args.number_of_digits}.zip'
+        with zipfile.ZipFile(zip_file, 'w') as zp:
+            for eq in valid_equations(args.number_of_digits):
+                print(eq)
+                eq = eq.strip().replace(' ', '')
+                img_filename = f'{eq}.png'
+                img = generate_image(eq)
+                with tempfile.TemporaryDirectory() as td:
+                    tmp = pathlib.Path(td)
+                    img.save(tmp / img_filename)
+                    zp.write(str(tmp/img_filename), arcname=img_filename)
+            print(f'-> {zip_file}')
+
+    if args.map_solutions:
+        mapping = map_solutions(args.number_of_digits)
+        mapping = sorted(mapping.items(), key=lambda x: len(x[1]))
+        for riddle, solutions in mapping:
+            print(f'{riddle}:\t', "\t".join(solutions))
+
+    if args.single_moves:
+        print("Move one matchstick in expression")
+        while expr := input("Expression: "):
+            tokens = scan(expr)
             moves = move_matches(tokens)
+            print("Valid moves")
             for m in moves:
                 print(" ".join(str(t) for t in m))
+
+    if args.matchstick_image:
+        print("Display matchstick image of expression:")
+        while expr := input("Expression: "):
+            img = generate_image(expr)
+            img.show()
