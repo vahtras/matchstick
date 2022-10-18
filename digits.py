@@ -274,6 +274,36 @@ def zip_equations(zip_file, equations):
         print(f'-> {zip_file}')
 
 
+def zip_solutions(zip_file, mapping):
+    zip_file = pathlib.Path(zip_file)
+    with zipfile.ZipFile(zip_file, 'w') as zp:
+        with tempfile.TemporaryDirectory() as td:
+            for riddle, solutions in mapping:
+                print(f'{riddle}:\t', "\t".join(solutions))
+                riddle = riddle.strip().replace(' ', '')
+                img_riddle = generate_image(riddle)
+                img_riddle_filename = f'{riddle}.png'
+                tmp = pathlib.Path(td)
+                img_riddle.save(tmp / img_riddle_filename)
+                zp.write(
+                    tmp/img_riddle_filename,
+                    arcname=f'{zip_file.stem}/{riddle}/{img_riddle_filename}'
+                )
+                for solution in solutions:
+                    solution = solution.strip().replace(' ', '')
+                    img_solution = generate_image(solution)
+                    img_solution_filename = f'{solution}.png'
+                    img_solution.save(tmp / img_solution_filename)
+                    zp.write(
+                        tmp/img_solution_filename,
+                        arcname=(
+                            f'{zip_file.stem}/{riddle}/'
+                            f'solutions/{img_solution_filename}'
+                        )
+                    )
+        print(f'-> {zip_file}')
+
+
 if __name__ == "__main__":
 
     import argparse
@@ -300,6 +330,10 @@ if __name__ == "__main__":
         '--map-solutions', action='store_true',
         help='Map riddle to solutions'
     )
+    parser.add_argument(
+        '--zip-solutions', action='store_true',
+        help='Save riddle/solution images in zip file'
+    )
 
     parser.add_argument(
         '--matchstick-image', action='store_true',
@@ -321,6 +355,12 @@ if __name__ == "__main__":
         mapping = sorted(mapping.items(), key=lambda x: len(x[1]))
         for riddle, solutions in mapping:
             print(f'{riddle}:\t', "\t".join(solutions))
+
+    if args.zip_solutions:
+        mapping = map_solutions(args.number_of_digits)
+        mapping = sorted(mapping.items(), key=lambda x: len(x[1]))
+        zip_file = f'solutions-{args.number_of_digits}.zip'
+        zip_solutions(zip_file, mapping)
 
     if args.single_moves:
         print("Move one matchstick in expression")
