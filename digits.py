@@ -260,6 +260,20 @@ def crop(img, keep=300):
     return imgc
 
 
+def zip_equations(zip_file, equations):
+    with zipfile.ZipFile(zip_file, 'w') as zp:
+        for eq in equations:
+            print(eq)
+            eq = eq.strip().replace(' ', '')
+            img_filename = f'{eq}.png'
+            img = generate_image(eq)
+            with tempfile.TemporaryDirectory() as td:
+                tmp = pathlib.Path(td)
+                img.save(tmp / img_filename)
+                zp.write(str(tmp/img_filename), arcname=img_filename)
+        print(f'-> {zip_file}')
+
+
 if __name__ == "__main__":
 
     import argparse
@@ -298,18 +312,9 @@ if __name__ == "__main__":
         for eq in valid_equations(args.number_of_digits):
             print(eq)
     if args.zip_equalities:
+        equations = valid_equations(args.number_of_digits)
         zip_file = f'equalities-{args.number_of_digits}.zip'
-        with zipfile.ZipFile(zip_file, 'w') as zp:
-            for eq in valid_equations(args.number_of_digits):
-                print(eq)
-                eq = eq.strip().replace(' ', '')
-                img_filename = f'{eq}.png'
-                img = generate_image(eq)
-                with tempfile.TemporaryDirectory() as td:
-                    tmp = pathlib.Path(td)
-                    img.save(tmp / img_filename)
-                    zp.write(str(tmp/img_filename), arcname=img_filename)
-            print(f'-> {zip_file}')
+        zip_equations(zip_file, equations)
 
     if args.map_solutions:
         mapping = map_solutions(args.number_of_digits)
