@@ -1,8 +1,11 @@
+import pathlib
+import subprocess
+
 import pytest
 
 from digits import (
     token, Operator, Digit, move_matches, remove_matches, scan,
-    valid_equations
+    valid_equations, img_filename, create_zip_with_symlink
 )
 
 
@@ -360,3 +363,22 @@ def test_scan_tokens(input, expected):
 def test_valid_equations(n, expected):
     equations = valid_equations(n)
     assert len(equations) == expected
+
+
+@pytest.mark.parametrize(
+    'eq, filename',
+    [
+        ('1 = 1', '1=1.png'),
+        ('2 =1 ', '2=1.png'),
+    ]
+)
+def test_img_filename(eq, filename):
+    assert img_filename(eq) == filename
+
+
+def test_zip_link():
+    create_zip_with_symlink('cpuinfo.zip', 'cpuinfo.txt', '/proc/cpuinfo')
+    subprocess.call('unzip cpuinfo.zip'.split())
+    assert pathlib.Path('cpuinfo.txt').is_symlink
+    # pathlib.Path('cpuinfo.txt').unlink
+    # pathlib.Path('cpuinfo.zip').unlink

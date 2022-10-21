@@ -1,7 +1,9 @@
 import collections
+import functools
 import pathlib
 from PIL import Image
 import tempfile
+import stat
 import zipfile
 
 
@@ -260,47 +262,81 @@ def crop(img, keep=300):
     return imgc
 
 
-def zip_equations(zip_file, equations):
+def img_filename(eq):
+    eq = eq.strip().replace(' ', '')
+    filename = f'{eq}.png'
+    return filename
+
+
+def create_zip_with_symlink(output_zip_filename, link_source, link_target):
+
+    with zipfile.ZipFile(
+        output_zip_filename, 'w', compression=zipfile.ZIP_DEFLATED
+    ) as zip_out:
+        write_symlink_to_zip(zip_out, link_source, link_target)
+
+
+def write_symlink_to_zip(zip_out, link_source, link_target):
+    zip_info = zipfile.ZipInfo(link_source)
+    zip_info.create_system = 3
+
+    unix_st_mode = (
+        stat.S_IFLNK | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+        stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH |
+        stat.S_IWOTH | stat.S_IXOTH
+    )
+
+    zip_info.external_attr = unix_st_mode << 16
+    zip_out.writestr(zip_info, link_target)
+
+
+def zip_equalities(zip_file, equalities, path=None):
+    zip_file = pathlib.Path(zip_file)
+    if path is None:
+        path = zip_file.stem
     with zipfile.ZipFile(zip_file, 'w') as zp:
-        for eq in equations:
+        for eq in equalities:
             print(eq)
-            eq = eq.strip().replace(' ', '')
-            img_filename = f'{eq}.png'
             img = generate_image(eq)
+            filename = img_filename(eq)
             with tempfile.TemporaryDirectory() as td:
                 tmp = pathlib.Path(td)
-                img.save(tmp / img_filename)
-                zp.write(str(tmp/img_filename), arcname=img_filename)
+                img.save(tmp / filename)
+                zp.write(
+                    str(tmp/filename),
+                    arcname=f'{path}/{filename}'
+                )
         print(f'-> {zip_file}')
 
 
-def zip_solutions(zip_file, mapping):
+def zip_solutions(zip_file, mapping, path=None):
     zip_file = pathlib.Path(zip_file)
-    with zipfile.ZipFile(zip_file, 'w') as zp:
+    if path is None:
+        path = zip_file.stem
+    equalities = functools.reduce(
+        lambda x, y: x | y,
+        (m[1] for m in mapping)
+    )
+    zip_equalities(zip_file, equalities, path=f'{path}/equalities')
+    with zipfile.ZipFile(zip_file, 'a') as zp:
         with tempfile.TemporaryDirectory() as td:
+            tmp = pathlib.Path(td)
             for riddle, solutions in mapping:
                 print(f'{riddle}:\t', "\t".join(solutions))
-                riddle = riddle.strip().replace(' ', '')
                 img_riddle = generate_image(riddle)
-                img_riddle_filename = f'{riddle}.png'
-                tmp = pathlib.Path(td)
+                img_riddle_filename = pathlib.Path(img_filename(riddle))
+                riddle_dir = img_riddle_filename.stem
                 img_riddle.save(tmp / img_riddle_filename)
                 zp.write(
                     tmp/img_riddle_filename,
-                    arcname=f'{zip_file.stem}/{riddle}/{img_riddle_filename}'
+                    arcname=f'{path}/{riddle_dir}/{img_riddle_filename}'
                 )
                 for solution in solutions:
-                    solution = solution.strip().replace(' ', '')
-                    img_solution = generate_image(solution)
-                    img_solution_filename = f'{solution}.png'
-                    img_solution.save(tmp / img_solution_filename)
-                    zp.write(
-                        tmp/img_solution_filename,
-                        arcname=(
-                            f'{zip_file.stem}/{riddle}/'
-                            f'solutions/{img_solution_filename}'
-                        )
-                    )
+                    img_solution_filename = img_filename(solution)
+                    link = f'{path}/{riddle_dir}/solutions/{img_solution_filename}'
+                    target = f'../../equalities/{img_solution_filename}'
+                    print(f'ln -s {target} {link}')
+                    write_symlink_to_zip(zp, link, target)
         print(f'-> {zip_file}')
 
 
@@ -348,7 +384,7 @@ if __name__ == "__main__":
     if args.zip_equalities:
         equations = valid_equations(args.number_of_digits)
         zip_file = f'equalities-{args.number_of_digits}.zip'
-        zip_equations(zip_file, equations)
+        zip_equalities(zip_file, equations)
 
     if args.map_solutions:
         mapping = map_solutions(args.number_of_digits)
@@ -357,9 +393,13 @@ if __name__ == "__main__":
             print(f'{riddle}:\t', "\t".join(solutions))
 
     if args.zip_solutions:
+        zip_file = f'riddles-{args.number_of_digits}.zip'
+
+        equations = valid_equations(args.number_of_digits)
+        zip_equalities(zip_file, equations)
+
         mapping = map_solutions(args.number_of_digits)
         mapping = sorted(mapping.items(), key=lambda x: len(x[1]))
-        zip_file = f'solutions-{args.number_of_digits}.zip'
         zip_solutions(zip_file, mapping)
 
     if args.single_moves:
