@@ -232,6 +232,8 @@ def map_solutions(n):
         riddles = move_matches(tokens)
         for r in riddles:
             key = " ".join(str(token) for token in r)
+            if is_trivial(key):
+                continue
             if collections.Counter(key)['='] == 1:
                 solutions[key].add(eq)
     return solutions
@@ -266,6 +268,10 @@ def img_filename(eq):
     eq = eq.strip().replace(' ', '')
     filename = f'{eq}.png'
     return filename
+
+
+def is_trivial(expr):
+    return eval(expr.replace('=', '==')) is True
 
 
 def create_zip_with_symlink(output_zip_filename, link_source, link_target):

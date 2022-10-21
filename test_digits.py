@@ -5,7 +5,7 @@ import pytest
 
 from digits import (
     token, Operator, Digit, move_matches, remove_matches, scan,
-    valid_equations, img_filename, create_zip_with_symlink
+    valid_equations, img_filename, create_zip_with_symlink, is_trivial
 )
 
 
@@ -374,6 +374,19 @@ def test_valid_equations(n, expected):
 )
 def test_img_filename(eq, filename):
     assert img_filename(eq) == filename
+
+
+@pytest.mark.parametrize(
+    'expr, expected',
+    [
+        ('0 = 0 + 0', True),
+        ('1 = 0 + 0', False),
+        ('1 = 2 + 0', False),
+        ('1 + 2 + 0', False),
+    ]
+)
+def test_trivial_cases(expr, expected):
+    assert is_trivial(expr) is expected
 
 
 def test_zip_link():
