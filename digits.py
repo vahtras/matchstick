@@ -221,6 +221,32 @@ def valid_equations(n):
                 eqs.add(f'{i} = {i+j} - {j}')
                 eqs.add(f'{i+j} = {i} + {j}')
                 eqs.add(f'{i+j} - {j} = {i}')
+    if n == 4:
+        for i in range(10):
+            for j in range(10):
+                for k in range(10):
+                    for l in range(10):
+                        if i + j == k + l:
+                            eqs.add(f'{i} + {j} = {k} + {l}')
+                        if i - j == k + l:
+                            eqs.add(f'{i} - {j} = {k} + {l}')
+                        if i + j == k - l:
+                            eqs.add(f'{i} + {j} = {k} - {l}')
+                        if i - j == k - l:
+                            eqs.add(f'{i} - {j} = {k} - {l}')
+                        if i + j + k == l:
+                            eqs.add(f'{i} + {j} + {k} = {l}')
+                            eqs.add(f'{l} = {i} + {j} + {k}')
+                        if i - j + k == l:
+                            eqs.add(f'{i} - {j} + {k} = {l}')
+                            eqs.add(f'{l} = {i} - {j} + {k}')
+                        if i + j - k == l:
+                            eqs.add(f'{i} + {j} - {k} = {l}')
+                            eqs.add(f'{l} = {i} + {j} - {k}')
+                        if i - j - k == l:
+                            eqs.add(f'{i} - {j} - {k} = {l}')
+                            eqs.add(f'{l} = {i} - {j} - {k}')
+
     return eqs
 
 
