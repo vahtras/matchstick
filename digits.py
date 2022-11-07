@@ -8,6 +8,23 @@ import zipfile
 
 
 class Token:
+    """
+    Base class for matchstick patterns
+
+    Each position in a pattern has a unique number
+    An image is made up of matches occupying positions
+
+    class variables
+
+        occupied[dict]: maps matchstick image to occupations
+        lookup_value[dict]: reverse lookup of occupied
+
+    Below two subclasses are defined:
+        Operator (+-=)
+        Digit (0-9)
+
+
+    """
     occupied = {}
     lookup_value = {}
 
@@ -121,6 +138,10 @@ class Operator(Token):
 
 
 class Digit(Token):
+    """
+    >>> Digit.occupied[8] # all matchstick positions occupied
+    (0, 1, 2, 3, 4, 5, 6)
+    """
     occupied = {
         0: (0, 1, 2, 4, 5, 6),
         1: (2, 5),
@@ -361,12 +382,12 @@ def zip_solutions(zip_file, mapping, path=None):
                 img_riddle.save(tmp / img_riddle_filename)
                 zp.write(
                     tmp/img_riddle_filename,
-                    arcname=f'{path}/{riddle_dir}/{img_riddle_filename}'
+                    arcname=f'{path}/{len(solutions)}-solution-puzzles/{riddle_dir}/{img_riddle_filename}'
                 )
                 for solution in solutions:
                     img_solution_filename = img_filename(solution)
-                    link = f'{path}/{riddle_dir}/solutions/{img_solution_filename}'
-                    target = f'../../equalities/{img_solution_filename}'
+                    link = f'{path}/{len(solutions)}-solution-puzzles/{riddle_dir}/solutions/{img_solution_filename}'
+                    target = f'../../../equalities/{img_solution_filename}'
                     print(f'ln -s {target} {link}')
                     write_symlink_to_zip(zp, link, target)
         print(f'-> {zip_file}')
@@ -425,7 +446,7 @@ if __name__ == "__main__":
             print(f'{riddle}:\t', "\t".join(solutions))
 
     if args.zip_solutions:
-        zip_file = f'riddles-{args.number_of_digits}.zip'
+        zip_file = f'{args.number_of_digits}-digit-puzzles.zip'
 
         equations = valid_equations(args.number_of_digits)
         zip_equalities(zip_file, equations)
