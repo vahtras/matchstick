@@ -148,11 +148,13 @@ class Token:
         if n == 2:
             for occa in occupied:
                 for occb in occupied - {occa}:
-                    token = self.__class__.from_occupied(
-                        occupied - {occa} - {occb}
-                    )
-                    if token.value is not None:
-                        valid.add(token)
+                    for vira in virtual:
+                        for virb in virtual - {vira}:
+                            token = self.__class__.from_occupied(
+                                (occupied - {occa} - {occb}) | ({vira} | {virb})
+                            )
+                            if token.value is not None:
+                                valid.add(token)
         return valid
 
 

@@ -154,6 +154,22 @@ class TestDigit:
             with pytest.raises(AdditionError):
                 digit.add_matches(2)
 
+    @pytest.mark.parametrize(
+        'value, excitations',
+        [
+            (0, set()),
+            (1, set()),
+            (2, {5}),
+            (3, set()),
+            (4, set()),
+            (5, {2}),
+        ]
+    )
+    def test_digit_double_excitations(self, value, excitations):
+        digit = Digit(value)
+        excitation_values = {d.value for d in digit.move_matches(2)}
+        assert excitation_values == excitations
+
 
 class TestOp:
 
