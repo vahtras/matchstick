@@ -29,6 +29,14 @@ class Token:
     lookup_value = {}
 
     def __init__(self, value=None):
+        """
+        Initialize a token from value.
+
+        >>> Digit(1)
+        Digit(1)
+        >>> Operator('+')
+        Operator(+)
+        """
         if value is not None:
             self._occupied = self.__class__.occupied.get(value)
         else:
@@ -36,6 +44,14 @@ class Token:
 
     @classmethod
     def from_occupied(cls, occupied):
+        """
+        Returns token with a given match positions
+
+        >>> Digit.from_occupied((2, 5))
+        Digit(1)
+        >>> Operator.from_occupied(())
+        Operator(-)
+        """
         token = cls()
         token.set_occupied(occupied)
         return token
@@ -43,12 +59,12 @@ class Token:
     def set_occupied(self, occupied):
         self._occupied = tuple(occupied)
 
+    def get_occupied(self):
+        return self._occupied
+
     @property
     def value(self):
         return self.lookup_value.get(frozenset(self._occupied))
-
-    def get_occupied(self):
-        return self._occupied
 
     def get_virtual(self):
         return set(range(7)) - set(self._occupied)
@@ -69,6 +85,15 @@ class Token:
         return f'{self.__class__.__name__}({self.value})'
 
     def remove_matches(self, n=1):
+        """
+        Return set of valid values after removing n digits
+
+        >>> Digit(8).removal_values(n=1)
+        {0, 6, 9}
+        """
+        if n > len(self):
+            raise RemovalError
+
         valid = set()
         occupied = set(self._occupied)
         if n == 1:
@@ -87,6 +112,9 @@ class Token:
         return valid
 
     def add_matches(self, n=1):
+        if len(self) + n > 7:
+            raise AdditionError
+
         valid = set()
         occupied = set(self._occupied)
         virtual = set(range(7)) - occupied
@@ -96,10 +124,10 @@ class Token:
                 if token.value is not None:
                     valid.add(token)
         if n == 2:
-            for occa in occupied:
-                for occb in occupied - {occa}:
+            for vira in virtual:
+                for virb in virtual - {vira}:
                     token = self.__class__.from_occupied(
-                        occupied - {occa} - {occb}
+                        occupied | {vira} | {virb}
                     )
                     if token.value is not None:
                         valid.add(token)
@@ -129,6 +157,10 @@ class Token:
 
 
 class Operator(Token):
+    """
+        0
+     1 ━┃━
+    """
     occupied = {
         '-': (),
         '+': (0,),
@@ -141,6 +173,15 @@ class Digit(Token):
     """
     >>> Digit.occupied[8] # all matchstick positions occupied
     (0, 1, 2, 3, 4, 5, 6)
+
+       0
+       ━━
+    1 ┃  ┃ 2
+       ━━ 3
+    4 ┃  ┃ 5
+       ━━
+       6
+
     """
     occupied = {
         0: (0, 1, 2, 4, 5, 6),
@@ -160,14 +201,6 @@ class Digit(Token):
         8: {0, 6, 9},
         9: {3, 5},
     }
-
-    def removal_values(self):
-        values = set()
-        for i, n in enumerate(self._occupied):
-            occ = frozenset(set(self._occupied) - {n})
-            if (d := Digit.lookup_value.get(occ)) is not None:
-                values.add(d)
-        return values
 
 
 def token(value):
@@ -403,6 +436,10 @@ if __name__ == "__main__":
         help='List valid single replacements of expression'
     )
     parser.add_argument(
+        '--double-moves', action='store_true',
+        help='List valid double replacements of expression'
+    )
+    parser.add_argument(
         '--list-equalities', action='store_true',
         help='List equalities of given dimension'
     )
@@ -464,8 +501,24 @@ if __name__ == "__main__":
             for m in moves:
                 print(" ".join(str(t) for t in m))
 
+    if args.double_moves:
+        print("Move two matchsticks in expression")
+        while expr := input("Expression: "):
+            tokens = scan(expr)
+            moves = move_matches(tokens, n=2)
+            print("Valid moves")
+            for m in moves:
+                print(" ".join(str(t) for t in m))
+
     if args.matchstick_image:
         print("Display matchstick image of expression:")
         while expr := input("Expression: "):
             img = generate_image(expr)
             img.show()
+
+
+class RemovalError(Exception):
+    pass
+
+class AdditionError(Exception):
+    pass

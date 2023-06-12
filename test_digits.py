@@ -5,199 +5,235 @@ import pytest
 
 from digits import (
     token, Operator, Digit, move_matches, remove_matches, scan,
-    valid_equations, img_filename, create_zip_with_symlink, is_trivial
+    valid_equations, img_filename, create_zip_with_symlink, is_trivial,
+    RemovalError, AdditionError
 )
 
 
-@pytest.mark.parametrize(
-    'value', range(10)
-)
-def test_eight_value(value):
-    digit = Digit(value)
-    assert digit.value == value
-    assert digit.get_occupied() == Digit.occupied[value]
+class TestDigit:
+
+    @pytest.mark.parametrize(
+        'value', range(10)
+    )
+    def test_digit_value(self, value):
+        """
+        The instance is initialized with value
+        and saved as a sequence of occpied match sites
+
+        Retrieving the instance value by reverse lookup from occupied dictionary
+        """
+        digit = Digit(value)
+        assert digit.value == value
+        assert repr(digit) == f'Digit({value})'
+        assert digit.get_occupied() == Digit.occupied[value]
+
+    @pytest.mark.parametrize(
+        'value, length',
+        [
+            (0, 6),
+            (1, 2),
+            (2, 5),
+            (3, 5),
+            (4, 4),
+            (5, 5),
+            (6, 6),
+            (7, 3),
+            (8, 7),
+            (9, 6),
+        ]
+    )
+    def test_len_digit(self, value, length):
+        digit = Digit(value)
+        assert len(digit) == length
+
+    @pytest.mark.parametrize(
+        'value, removals',
+        [
+            (0, set()),
+            (1, set()),
+            (2, set()),
+            (3, set()),
+            (4, set()),
+            (5, set()),
+            (6, {5}),
+            (7, {1}),
+            (8, {0, 6, 9}),
+            (9, {3, 5}),
+        ]
+    )
+    def test_digit_single_removals(self, value, removals):
+        digit = Digit(value)
+        removals_values = {d.value for d in digit.remove_matches(1)}
+        assert removals_values == removals
+
+    @pytest.mark.parametrize(
+        'value, additions',
+        [
+            (0, {8}),
+            (1, {7}),
+            (2, set()),
+            (3, {9}),
+            (4, set()),
+            (5, {6, 9}),
+            (6, {8}),
+            (7, set()),
+            (8, set()),
+            (9, {8}),
+        ]
+    )
+    def test_digit_single_additions(self, value, additions):
+        digit = Digit(value)
+        if len(digit) <= 6:
+            additions_values = {d.value for d in digit.add_matches(1)}
+            assert additions_values == additions
+        else:
+            with pytest.raises(AdditionError):
+                digit.add_matches(1)
+
+    @pytest.mark.parametrize(
+        'value, excitations',
+        [
+            (0, {6, 9}),
+            (1, set()),
+            (2, {3}),
+            (3, {2, 5}),
+            (4, set()),
+            (5, {3}),
+            (6, {0, 9}),
+            (7, set()),
+            (8, set()),
+            (9, {0, 6}),
+        ]
+    )
+    def test_digit_single_excitations(self, value, excitations):
+        digit = Digit(value)
+        excitation_values = {d.value for d in digit.move_matches(1)}
+        assert excitation_values == excitations
+
+    @pytest.mark.parametrize(
+        'value, removals',
+        [
+            (0, set()),
+            (1, set()),
+            (2, set()),
+            (3, {7}),
+            (4, {1}),
+            (5, set()),
+            (6, set()),
+            (7, set()),
+            (8, {2, 3, 5}),
+            (9, {4}),
+        ]
+    )
+    def test_digit_double_removals(self, value, removals):
+        digit = Digit(value)
+        removals_values = {d.value for d in digit.remove_matches(2)}
+        assert removals_values == removals
+
+    @pytest.mark.parametrize(
+        'value, additions',
+        [
+            (0, set()),
+            (1, {4}),
+            (2, {8}),
+            (3, {8}),
+            (4, {9}),
+            (5, {8}),
+            (6, set()),
+            (7, {3}),
+            (8, set()),
+            (9, set()),
+        ]
+    )
+    def test_digit_double_additions(self, value, additions):
+        digit = Digit(value)
+        if len(digit) <= 5:
+            additions_values = {d.value for d in digit.add_matches(2)}
+            assert additions_values == additions
+        else:
+            with pytest.raises(AdditionError):
+                digit.add_matches(2)
 
 
-@pytest.mark.parametrize(
-    'value', ['-', '+', '='],
-)
-def test_op_value(value):
-    op = Operator(value)
-    assert op.value == value
-    assert op.get_occupied() == Operator.occupied[value]
+class TestOp:
 
+    @pytest.mark.parametrize(
+        'value', ['-', '+', '='],
+    )
+    def test_operator_value(self, value):
+        op = Operator(value)
+        assert op.value == value
+        assert repr(op) == f'Operator({value})'
+        assert op.get_occupied() == Operator.occupied[value]
 
-@pytest.mark.parametrize(
-    'value, length',
-    [
-        (0, 6),
-        (1, 2),
-        (2, 5),
-        (3, 5),
-        (4, 4),
-        (5, 5),
-        (6, 6),
-        (7, 3),
-        (8, 7),
-        (9, 6),
-    ]
-)
-def test_len_digit(value, length):
-    digit = Digit(value)
-    assert len(digit) == length
+    @pytest.mark.parametrize(
+        'value, length',
+        [
+            ('-', 0),
+            ('+', 1),
+            ('=', 1),
+        ]
+    )
+    def test_len_op(self, value, length):
+        digit = Operator(value)
+        assert len(digit) == length
 
+    @pytest.mark.parametrize(
+        'value, removals',
+        [
+            ('-', set()),
+            ('+', {'-'}),
+            ('=', {'-'}),
+        ]
+    )
+    def test_operator_single_removals(self, value, removals):
+        op = Operator(value)
+        if len(op):
+            removals_values = {t.value for t in op.remove_matches(1)}
+            assert removals_values == removals
+        else:
+            with pytest.raises(RemovalError):
+                op.remove_matches(1)
 
-@pytest.mark.parametrize(
-    'value, length',
-    [
-        ('-', 0),
-        ('+', 1),
-        ('=', 1),
-    ]
-)
-def test_len_op(value, length):
-    digit = Operator(value)
-    assert len(digit) == length
+    @pytest.mark.parametrize(
+        'value, additions',
+        [
+            ('-', {'+', '='}),
+            ('+', set()),
+            ('=', set()),
+        ]
+    )
+    def test_operator_single_additions(self, value, additions):
+        op = Operator(value)
+        additions_values = {d.value for d in op.add_matches(1)}
+        assert additions_values == additions
 
+    @pytest.mark.parametrize(
+        'value, excitations',
+        [
+            ('-', set()),
+            ('+', {'='}),
+            ('=', {'+'}),
+        ]
+    )
+    def test_operator_single_excitations(self, value, excitations):
+        op = Operator(value)
+        excitation_values = {d.value for d in op.move_matches(1)}
+        assert excitation_values == excitations
 
-@pytest.mark.parametrize(
-    'value, valid_one_removed',
-    [
-        (0, set()),
-        (7, {1}),
-        (8, {0, 6, 9}),
-        (9, {3, 5}),
-    ]
-)
-def test_digit_removals(value, valid_one_removed):
-    digit = Digit(value)
-    assert digit.removal_values() == valid_one_removed
+    @pytest.mark.parametrize(
+        'value, removals',
+        [
+            ('-', set()),
+            ('+', set()),
+            ('=', set()),
+        ]
+    )
+    def test_operator_double_removals(self, value, removals):
+        op = Operator(value)
+        with pytest.raises(RemovalError):
+            op.remove_matches(2)
 
-
-@pytest.mark.parametrize(
-    'value, removals',
-    [
-        (0, set()),
-        (1, set()),
-        (2, set()),
-        (3, set()),
-        (4, set()),
-        (5, set()),
-        (6, {5}),
-        (7, {1}),
-        (8, {0, 6, 9}),
-        (9, {3, 5}),
-    ]
-)
-def test_digit_single_removals(value, removals):
-    digit = Digit(value)
-    removals_values = {d.value for d in digit.remove_matches(1)}
-    assert removals_values == removals
-
-
-@pytest.mark.parametrize(
-    'value, removals',
-    [
-        ('-', set()),
-        ('+', {'-'}),
-        ('=', {'-'}),
-    ]
-)
-def test_ops_single_removals(value, removals):
-    op = Operator(value)
-    removals_values = {d.value for d in op.remove_matches(1)}
-    assert removals_values == removals
-
-
-@pytest.mark.parametrize(
-    'value, additions',
-    [
-        (0, {8}),
-        (1, {7}),
-        (2, set()),
-        (3, {9}),
-        (4, set()),
-        (5, {6, 9}),
-        (6, {8}),
-        (7, set()),
-        (8, set()),
-        (9, {8}),
-    ]
-)
-def test_digit_single_additions(value, additions):
-    digit = Digit(value)
-    additions_values = {d.value for d in digit.add_matches(1)}
-    assert additions_values == additions
-
-
-@pytest.mark.parametrize(
-    'value, additions',
-    [
-        ('-', {'+', '='}),
-        ('+', set()),
-        ('=', set()),
-    ]
-)
-def test_op_single_additions(value, additions):
-    op = Operator(value)
-    additions_values = {d.value for d in op.add_matches(1)}
-    assert additions_values == additions
-
-
-@pytest.mark.parametrize(
-    'value, excitations',
-    [
-        (0, {6, 9}),
-        (1, set()),
-        (2, {3}),
-        (3, {2, 5}),
-        (4, set()),
-        (5, {3}),
-        (6, {0, 9}),
-        (7, set()),
-        (8, set()),
-        (9, {0, 6}),
-    ]
-)
-def test_digit_single_excitations(value, excitations):
-    digit = Digit(value)
-    excitation_values = {d.value for d in digit.move_matches(1)}
-    assert excitation_values == excitations
-
-
-@pytest.mark.parametrize(
-    'value, excitations',
-    [
-        ('-', set()),
-        ('+', {'='}),
-        ('=', {'+'}),
-    ]
-)
-def test_opg_single_excitations(value, excitations):
-    op = Operator(value)
-    excitation_values = {d.value for d in op.move_matches(1)}
-    assert excitation_values == excitations
-
-
-@pytest.mark.parametrize(
-    'value, removals',
-    [
-        (0, set()),
-        (1, set()),
-        (2, set()),
-        (3, {7}),
-        (4, {1}),
-        (5, set()),
-        (6, set()),
-        (7, set()),
-        (8, {2, 3, 5}),
-        (9, {4}),
-    ]
-)
-def test_digit_double_removals(value, removals):
-    digit = Digit(value)
-    removals_values = {d.value for d in digit.remove_matches(2)}
-    assert removals_values == removals
 
 
 @pytest.mark.parametrize(
