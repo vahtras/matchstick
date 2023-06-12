@@ -1,5 +1,6 @@
 import collections
 import functools
+import itertools
 import pathlib
 from PIL import Image
 import tempfile
@@ -102,13 +103,12 @@ class Token:
                 if digit.value is not None:
                     valid.add(digit)
         if n == 2:
-            for occa in occupied:
-                for occb in occupied - {occa}:
-                    digit = Digit.from_occupied(
-                        occupied - {occa} - {occb}
-                    )
-                    if digit.value is not None:
-                        valid.add(digit)
+            for occa, occb in itertools.combinations(occupied, 2):
+                digit = Digit.from_occupied(
+                    occupied - {occa, occb}
+                )
+                if digit.value is not None:
+                    valid.add(digit)
         return valid
 
     def add_matches(self, n=1):
@@ -124,13 +124,12 @@ class Token:
                 if token.value is not None:
                     valid.add(token)
         if n == 2:
-            for vira in virtual:
-                for virb in virtual - {vira}:
-                    token = self.__class__.from_occupied(
-                        occupied | {vira} | {virb}
-                    )
-                    if token.value is not None:
-                        valid.add(token)
+            for vira, virb in itertools.combinations(virtual, 2):
+                token = self.__class__.from_occupied(
+                    occupied | {vira, virb}
+                )
+                if token.value is not None:
+                    valid.add(token)
         return valid
 
     def move_matches(self, n=1):
@@ -146,15 +145,13 @@ class Token:
                     if token.value is not None:
                         valid.add(token)
         if n == 2:
-            for occa in occupied:
-                for occb in occupied - {occa}:
-                    for vira in virtual:
-                        for virb in virtual - {vira}:
-                            token = self.__class__.from_occupied(
-                                (occupied - {occa} - {occb}) | ({vira} | {virb})
-                            )
-                            if token.value is not None:
-                                valid.add(token)
+            for occa, occb in itertools.combinations(occupied, 2):
+                for vira, virb in itertools.combinations(virtual, 2):
+                    token = self.__class__.from_occupied(
+                        occupied - {occa, occb} | {vira, virb}
+                    )
+                    if token.value is not None:
+                        valid.add(token)
         return valid
 
 

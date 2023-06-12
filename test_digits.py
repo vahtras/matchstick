@@ -163,6 +163,10 @@ class TestDigit:
             (3, set()),
             (4, set()),
             (5, {2}),
+            (6, set()),
+            (7, set()),
+            (8, set()),
+            (9, set()),
         ]
     )
     def test_digit_double_excitations(self, value, excitations):
