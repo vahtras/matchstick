@@ -63,6 +63,9 @@ class Token:
     def get_occupied(self):
         return self._occupied
 
+    def copy(self):
+        return self.from_occupied(self._occupied)
+
     @property
     def value(self):
         return self.lookup_value.get(frozenset(self._occupied))
@@ -83,7 +86,10 @@ class Token:
         return f'{self.value}'
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.value})'
+        return (
+            f'{self.__class__.__name__}'
+            f'({self.value if self.value is not None else self.get_occupied()})'
+        )
 
     def remove_matches(self, n=1):
         """
@@ -227,6 +233,7 @@ def remove_matches(tokens: list[Token], n: int = 1):
 def move_matches(tokens: list[Token], n: int = 1):
     generated = set()
     if n == 1:
+        """
         for i, di in enumerate(tokens):
             cli = di.__class__
             occupied_i = set(di.get_occupied())
@@ -253,6 +260,52 @@ def move_matches(tokens: list[Token], n: int = 1):
                             )
                         tokens[j] = dj
                         tokens[i] = di
+        """
+
+        occupied = [(i, o) for i, t in enumerate(tokens) for o in t.get_occupied()]
+        virtual = [(j, v) for j, t in enumerate(tokens) for v in t.get_virtual()]
+
+        for (i, occ), in itertools.combinations(occupied, r=1):
+            hole = tokens[i].__class__.from_occupied(
+                set(tokens[i].get_occupied()) - {occ}
+            )
+            tokens[i], ti = hole, tokens[i]
+            for (j, vir), in itertools.combinations(virtual, r=1):
+                particle = tokens[j].__class__.from_occupied(
+                    set(tokens[j].get_occupied()) | {vir}
+                )
+                tokens[j], tj = particle, tokens[j]
+                if all(t.value is not None for t in tokens):
+                    generated.add(tuple(t.copy() for t in tokens))
+                tokens[j] = tj
+            tokens[i] = ti
+
+    if n == 2:
+        occupied = [(i, o) for i, t in enumerate(tokens) for o in t.get_occupied()]
+        virtual = [(i, v) for i, t in enumerate(tokens) for v in t.get_virtual()]
+        dtokens = [None for _ in tokens]
+        breakpoint()
+        for o1, o2 in itertools.combinations(occupied, 2):
+            for v1, v2 in itertools.combinations(virtual, 2):
+                # set(tokens[o1[0].get_ouccpied()) - {o1[1]}
+                dtokens[o1[0]] = tokens[o1[0]].__class__.from_occupied(
+                    set(tokens[o1[0]].get_occupied()) - {o1[1]}
+                )
+                dtokens[o2[0]] = tokens[o2[0]].__class__.from_occupied(
+                    set(tokens[o2[0]].get_occupied()) - {o2[1]}
+                )
+                dtokens[o1[0]] = tokens[o1[0]].__class__.from_occupied(
+                    set(tokens[o1[0]].get_occupied()) | {v1[1]}
+                )
+                dtokens[o2[0]] = tokens[o2[0]].__class__.from_occupied(
+                    set(tokens[o2[0]].get_occupied()) | {v2[1]}
+                )
+                if all(d.value is not None for d in tokens):
+                    generated.add(
+                        tuple(d.__class__.from_occupied(d._occupied) for d in dtokens)
+                    )
+
+
     return generated
 
 
@@ -278,37 +331,44 @@ def valid_equations(n):
         for i in range(10):
             for j in range(10):
                 for k in range(10):
-                    for l in range(10):
-                        if i + j == k + l:
-                            eqs.add(f'{i} + {j} = {k} + {l}')
-                        if i - j == k + l:
-                            eqs.add(f'{i} - {j} = {k} + {l}')
-                        if i + j == k - l:
-                            eqs.add(f'{i} + {j} = {k} - {l}')
-                        if i - j == k - l:
-                            eqs.add(f'{i} - {j} = {k} - {l}')
-                        if i + j + k == l:
-                            eqs.add(f'{i} + {j} + {k} = {l}')
-                            eqs.add(f'{l} = {i} + {j} + {k}')
-                        if i - j + k == l:
-                            eqs.add(f'{i} - {j} + {k} = {l}')
-                            eqs.add(f'{l} = {i} - {j} + {k}')
-                        if i + j - k == l:
-                            eqs.add(f'{i} + {j} - {k} = {l}')
-                            eqs.add(f'{l} = {i} + {j} - {k}')
-                        if i - j - k == l:
-                            eqs.add(f'{i} - {j} - {k} = {l}')
-                            eqs.add(f'{l} = {i} - {j} - {k}')
+                    for _l in range(10):
+                        if i + j == k + _l:
+                            eqs.add(f'{i} + {j} = {k} + {_l}')
+                        if i - j == k + _l:
+                            eqs.add(f'{i} - {j} = {k} + {_l}')
+                        if i + j == k - _l:
+                            eqs.add(f'{i} + {j} = {k} - {_l}')
+                        if i - j == k - _l:
+                            eqs.add(f'{i} - {j} = {k} - {_l}')
+                        if i + j + k == _l:
+                            eqs.add(f'{i} + {j} + {k} = {_l}')
+                            eqs.add(f'{_l} = {i} + {j} + {k}')
+                        if i - j + k == _l:
+                            eqs.add(f'{i} - {j} + {k} = {_l}')
+                            eqs.add(f'{_l} = {i} - {j} + {k}')
+                        if i + j - k == _l:
+                            eqs.add(f'{i} + {j} - {k} = {_l}')
+                            eqs.add(f'{_l} = {i} + {j} - {k}')
+                        if i - j - k == _l:
+                            eqs.add(f'{i} - {j} - {k} = {_l}')
+                            eqs.add(f'{_l} = {i} - {j} - {k}')
 
     return eqs
 
 
-def map_solutions(n):
+def map_solutions(n: int, m: int = 1) -> dict[str, set[str]]:
+    """
+    Given number of digits and number of moves return mapping of
+    riddle to set of possible solutions
+
+    >>> map_solutions(2):
+    {"2 = 3": {"2 = 2", "3 = 3"}, ...}
+    """
     eqs = valid_equations(n)
     solutions = collections.defaultdict(set)
     for eq in eqs:
         tokens = scan(eq)
-        riddles = move_matches(tokens)
+        riddles = move_matches(tokens, m)
         for r in riddles:
             key = " ".join(str(token) for token in r)
             if is_trivial(key):
@@ -418,7 +478,10 @@ def zip_solutions(zip_file, mapping, path=None):
                 )
                 for solution in solutions:
                     img_solution_filename = img_filename(solution)
-                    link = f'{path}/{len(solutions)}-solution-puzzles/{riddle_dir}/solutions/{img_solution_filename}'
+                    link = (
+                        f'{path}/{len(solutions)}-solution-puzzles/{riddle_dir}/solutions/'
+                        f'{img_solution_filename}'
+                    )
                     target = f'../../../equalities/{img_solution_filename}'
                     print(f'ln -s {target} {link}')
                     write_symlink_to_zip(zp, link, target)
@@ -450,6 +513,10 @@ if __name__ == "__main__":
         '--number-of-digits', default=2, type=int,
         help='Number of digits in expression'
     )
+    parser.add_argument(
+        '--number-of-moves', default=1, type=int,
+        help='Number of matches moved'
+    )
 
     parser.add_argument(
         '--map-solutions', action='store_true',
@@ -476,7 +543,7 @@ if __name__ == "__main__":
         zip_equalities(zip_file, equations)
 
     if args.map_solutions:
-        mapping = map_solutions(args.number_of_digits)
+        mapping = map_solutions(args.number_of_digits, args.number_of_moves)
         mapping = sorted(mapping.items(), key=lambda x: len(x[1]))
         for riddle, solutions in mapping:
             print(f'{riddle}:\t', "\t".join(solutions))

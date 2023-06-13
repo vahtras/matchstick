@@ -2,10 +2,13 @@ import pathlib
 import subprocess
 
 import pytest
+from hypothesis import given
+from hypothesis.strategies import integers
 
 from digits import (
     token, Operator, Digit, move_matches, remove_matches, scan,
     valid_equations, img_filename, create_zip_with_symlink, is_trivial,
+    map_solutions,
     RemovalError, AdditionError
 )
 
@@ -326,6 +329,28 @@ def test_excite_singles(value, excitation_values):
     assert singles_excited_values == excitation_values
 
 
+@pytest.mark.skip
+@pytest.mark.parametrize(
+    'value, excitation_values',
+    [
+        (0, set()),
+        (1, set()),
+        (2, {5}),
+        (3, set()),
+        (4, set()),
+        (5, {2}),
+        (6, set()),
+        (7, set()),
+        (8, set()),
+        (9, set()),
+    ]
+)
+def test_doubly_excited_singles(value, excitation_values):
+    singles = [token(value)]
+    singles_excited = move_matches(singles, 2)
+    singles_excited_values = {s[0].value for s in singles_excited}
+    assert singles_excited_values == excitation_values
+
 @pytest.mark.parametrize(
     'values, excitation_values',
     [
@@ -416,9 +441,35 @@ def test_scan_tokens(input, expected):
         (3, 220),
     ]
 )
-def test_valid_equations(n, expected):
+def test_valid_equation_count(n, expected):
     equations = valid_equations(n)
     assert len(equations) == expected
+
+
+@given(integers(0, 9))
+def test_valid_equations_2(n):
+    assert f'{n} = {n}' in valid_equations(2)
+
+@given(integers(0, 9), integers(0, 9))
+def test_valid_equations_3(i, j):
+    if i + j < 10:
+        eqs = valid_equations(3)
+        assert f'{i} + {j} = {i + j}' in eqs
+        assert f'{i + j} = {i} + {j}' in eqs
+        assert f'{i} = {i + j} - {j}' in eqs
+        assert f'{i + j} - {j} = {i}' in eqs
+
+@given(integers(0, 9), integers(0, 9), integers(0, 9))
+def test_valid_equations_4(i, j, k):
+    if i + j + k < 10:
+        eqs = valid_equations(4)
+        assert f'{i} + {j} + {k} = {i + j + k}' in eqs
+        assert f'{i} + {j} = {i + j + k} - {k}' in eqs
+        assert f'{i} = {i + j + k} - {j} - {k}' in eqs
+
+        assert f'{i + j + k} = {i} + {j} + {k}' in eqs
+        assert f'{i + j + k} - {k} = {i} + {j}' in eqs
+        assert f'{i + j + k} - {j} - {k} = {i}' in eqs
 
 
 @pytest.mark.parametrize(
@@ -451,3 +502,7 @@ def test_zip_link():
     assert pathlib.Path('cpuinfo.txt').is_symlink
     # pathlib.Path('cpuinfo.txt').unlink
     # pathlib.Path('cpuinfo.zip').unlink
+
+def test_map_solutions():
+    solutions = map_solutions(2, 1)
+    assert solutions.get("2 = 3") == {"2 = 2", "3 = 3"}
