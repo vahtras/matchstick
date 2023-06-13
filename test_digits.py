@@ -329,7 +329,6 @@ def test_excite_singles(value, excitation_values):
     assert singles_excited_values == excitation_values
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     'value, excitation_values',
     [

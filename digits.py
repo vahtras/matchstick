@@ -231,7 +231,17 @@ def remove_matches(tokens: list[Token], n: int = 1):
 
 
 def move_matches(tokens: list[Token], n: int = 1):
+    """
+    Input list of tokens representing an equation,
+    generate expressions by moving n matches from occupied to
+    vacant sites
+
+    """
+
+    occupied = [(i, o) for i, t in enumerate(tokens) for o in t.get_occupied()]
+    virtual = [(j, v) for j, t in enumerate(tokens) for v in t.get_virtual()]
     generated = set()
+
     if n == 1:
         """
         for i, di in enumerate(tokens):
@@ -262,8 +272,6 @@ def move_matches(tokens: list[Token], n: int = 1):
                         tokens[i] = di
         """
 
-        occupied = [(i, o) for i, t in enumerate(tokens) for o in t.get_occupied()]
-        virtual = [(j, v) for j, t in enumerate(tokens) for v in t.get_virtual()]
 
         for (i, occ), in itertools.combinations(occupied, r=1):
             hole = tokens[i].__class__.from_occupied(
@@ -281,30 +289,38 @@ def move_matches(tokens: list[Token], n: int = 1):
             tokens[i] = ti
 
     if n == 2:
-        occupied = [(i, o) for i, t in enumerate(tokens) for o in t.get_occupied()]
-        virtual = [(i, v) for i, t in enumerate(tokens) for v in t.get_virtual()]
-        dtokens = [None for _ in tokens]
-        breakpoint()
-        for o1, o2 in itertools.combinations(occupied, 2):
-            for v1, v2 in itertools.combinations(virtual, 2):
-                # set(tokens[o1[0].get_ouccpied()) - {o1[1]}
-                dtokens[o1[0]] = tokens[o1[0]].__class__.from_occupied(
-                    set(tokens[o1[0]].get_occupied()) - {o1[1]}
+        for (i1, occ1), (i2, occ2) in itertools.combinations(occupied, r=2):
+            hole1 = tokens[i1].__class__.from_occupied(
+                set(tokens[i1].get_occupied()) - {occ1}
+            )
+            tokens[i1], ti1 = hole1, tokens[i1]
+
+            hole2 = tokens[i2].__class__.from_occupied(
+                set(tokens[i2].get_occupied()) - {occ2}
+            )
+            tokens[i2], ti2 = hole2, tokens[i2]
+
+            for (j1, vir1), (j2, vir2) in itertools.combinations(virtual, r=2):
+
+                particle1 = tokens[j1].__class__.from_occupied(
+                    set(tokens[j1].get_occupied()) | {vir1}
                 )
-                dtokens[o2[0]] = tokens[o2[0]].__class__.from_occupied(
-                    set(tokens[o2[0]].get_occupied()) - {o2[1]}
+                tokens[j1], tj1 = particle1, tokens[j1]
+
+                particle2 = tokens[j2].__class__.from_occupied(
+                    set(tokens[j2].get_occupied()) | {vir2}
                 )
-                dtokens[o1[0]] = tokens[o1[0]].__class__.from_occupied(
-                    set(tokens[o1[0]].get_occupied()) | {v1[1]}
-                )
-                dtokens[o2[0]] = tokens[o2[0]].__class__.from_occupied(
-                    set(tokens[o2[0]].get_occupied()) | {v2[1]}
-                )
+                tokens[j2], tj2 = particle2, tokens[j2]
+
                 if all(d.value is not None for d in tokens):
                     generated.add(
-                        tuple(d.__class__.from_occupied(d._occupied) for d in dtokens)
+                        tuple(d.copy() for d in tokens)
                     )
+                tokens[j2] = tj2
+                tokens[j1] = tj1
 
+            tokens[i2] = ti2
+            tokens[i1] = ti1
 
     return generated
 
