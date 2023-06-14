@@ -560,18 +560,20 @@ if __name__ == "__main__":
 
     if args.map_solutions:
         mapping = map_solutions(args.number_of_digits, args.number_of_moves)
-        mapping = sorted(mapping.items(), key=lambda x: len(x[1]))
+        mapping = sorted(mapping.items(), key=lambda x: (len(x[1]), x))
         for riddle, solutions in mapping:
             print(f'{riddle}:\t', "\t".join(solutions))
 
     if args.zip_solutions:
-        zip_file = f'{args.number_of_digits}-digit-puzzles.zip'
+        zip_file = (
+            f'{args.number_of_digits}-digit-{args.number_of_moves}-move-puzzles.zip'
+        )
 
         equations = valid_equations(args.number_of_digits)
         zip_equalities(zip_file, equations)
 
-        mapping = map_solutions(args.number_of_digits)
-        mapping = sorted(mapping.items(), key=lambda x: len(x[1]))
+        mapping = map_solutions(args.number_of_digits, args.number_of_moves)
+        mapping = sorted(mapping.items(), key=lambda x: (len(x[1]), x))
         zip_solutions(zip_file, mapping)
 
     if args.single_moves:
