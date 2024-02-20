@@ -21,7 +21,7 @@ class TestDigit:
     def test_digit_value(self, value):
         """
         The instance is initialized with value
-        and saved as a sequence of occpied match sites
+        and saved as a sequence of occupied match sites
 
         Retrieving the instance value by reverse lookup from occupied dictionary
         """
@@ -90,7 +90,7 @@ class TestDigit:
             additions_values = {d.value for d in digit.add_matches(1)}
             assert additions_values == additions
         else:
-            with pytest.raises(AdditionError):
+            with pytest.warns(UserWarning):
                 digit.add_matches(1)
 
     @pytest.mark.parametrize(
@@ -150,12 +150,8 @@ class TestDigit:
     )
     def test_digit_double_additions(self, value, additions):
         digit = Digit(value)
-        if len(digit) <= 5:
-            additions_values = {d.value for d in digit.add_matches(2)}
-            assert additions_values == additions
-        else:
-            with pytest.raises(AdditionError):
-                digit.add_matches(2)
+        additions_values = {d.value for d in digit.add_matches(2)}
+        assert additions_values == additions
 
     @pytest.mark.parametrize(
         'value, excitations',
@@ -176,6 +172,46 @@ class TestDigit:
         digit = Digit(value)
         excitation_values = {d.value for d in digit.move_matches(2)}
         assert excitation_values == excitations
+
+    @pytest.mark.parametrize(
+        'value, removals',
+        [
+            (0, {7}),
+            (1, set()),
+            (2, set()),
+            (3, {1}),
+            (4, set()),
+            (5, set()),
+            (6, set()),
+            (7, set()),
+            (8, {4}),
+            (9, {7}),
+        ]
+    )
+    def test_digit_triple_removals(self, value, removals):
+        digit = Digit(value)
+        removals_values = {d.value for d in digit.remove_matches(3)}
+        assert removals_values == removals
+
+    @pytest.mark.parametrize(
+        'value, additions',
+        [
+            (0, set()),
+            (1, {3}),
+            (2, set()),
+            (3, set()),
+            (4, {8}),
+            (5, set()),
+            (6, set()),
+            (7, {0, 9}),
+            (8, set()),
+            (9, set()),
+        ]
+    )
+    def test_digit_triple_additions(self, value, additions):
+        digit = Digit(value)
+        additions_values = {d.value for d in digit.add_matches(3)}
+        assert additions_values == additions
 
 
 class TestOp:
@@ -211,12 +247,8 @@ class TestOp:
     )
     def test_operator_single_removals(self, value, removals):
         op = Operator(value)
-        if len(op):
-            removals_values = {t.value for t in op.remove_matches(1)}
-            assert removals_values == removals
-        else:
-            with pytest.raises(RemovalError):
-                op.remove_matches(1)
+        removals_values = {t.value for t in op.remove_matches(1)}
+        assert removals_values == removals
 
     @pytest.mark.parametrize(
         'value, additions',
@@ -254,8 +286,8 @@ class TestOp:
     )
     def test_operator_double_removals(self, value, removals):
         op = Operator(value)
-        with pytest.raises(RemovalError):
-            op.remove_matches(2)
+        removal_values = {d.value for d in op.remove_matches(2)}
+        assert removal_values == removals
 
 
 
@@ -502,6 +534,20 @@ def test_zip_link():
     # pathlib.Path('cpuinfo.txt').unlink
     # pathlib.Path('cpuinfo.zip').unlink
 
-def test_map_solutions():
+def test_map_solutions21():
     solutions = map_solutions(2, 1)
     assert solutions.get("2 = 3") == {"2 = 2", "3 = 3"}
+
+def test_map_solutions32():
+    solutions = map_solutions(3, 2)
+    assert solutions.get("9 - 6 = 6") == {
+        "0 = 6 - 6",
+        "9 - 9 = 0",
+        "6 - 0 = 6",
+        "3 + 6 = 9",
+        "6 - 6 = 0",
+        "9 - 0 = 9",
+        "8 - 2 = 6",
+        "8 - 6 = 2",
+        "3 + 5 = 8",
+    }

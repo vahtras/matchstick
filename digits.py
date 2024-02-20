@@ -6,6 +6,7 @@ from PIL import Image
 import tempfile
 import stat
 import zipfile
+import warnings
 
 
 class Token:
@@ -93,13 +94,13 @@ class Token:
 
     def remove_matches(self, n=1):
         """
-        Return set of valid values after removing n digits
+        Return set of valid values after removing n matches
 
-        >>> Digit(8).removal_values(n=1)
+        >>> Digit(8).remove_matches(n=1)
         {0, 6, 9}
         """
         if n > len(self):
-            raise RemovalError
+            return set()
 
         valid = set()
         occupied = set(self._occupied)
@@ -115,11 +116,27 @@ class Token:
                 )
                 if digit.value is not None:
                     valid.add(digit)
+        if n == 3:
+            for occa, occb, occc in itertools.combinations(occupied, 3):
+                digit = Digit.from_occupied(
+                    occupied - {occa, occb, occc}
+                )
+                if digit.value is not None:
+                    valid.add(digit)
+        if n > 3:
+            raise NotImplementedError
         return valid
 
     def add_matches(self, n=1):
+        """
+        Return set of valid values after adding n matches
+
+        >>> Digit(8).add_matches(n=1)
+        {0, 6, 9}
+        """
         if len(self) + n > 7:
-            raise AdditionError
+            warnings.warn('foo')
+            return set()
 
         valid = set()
         occupied = set(self._occupied)
@@ -136,6 +153,15 @@ class Token:
                 )
                 if token.value is not None:
                     valid.add(token)
+        if n == 3:
+            for vira, virb, virc in itertools.combinations(virtual, 3):
+                token = self.__class__.from_occupied(
+                    occupied | {vira, virb, virc}
+                )
+                if token.value is not None:
+                    valid.add(token)
+        if n > 3:
+            raise NotImplementedError
         return valid
 
     def move_matches(self, n=1):
@@ -158,6 +184,9 @@ class Token:
                     )
                     if token.value is not None:
                         valid.add(token)
+        if n > 2:
+            raise NotImplementedError
+
         return valid
 
 
@@ -243,36 +272,6 @@ def move_matches(tokens: list[Token], n: int = 1):
     generated = set()
 
     if n == 1:
-        """
-        for i, di in enumerate(tokens):
-            cli = di.__class__
-            occupied_i = set(di.get_occupied())
-            for j, dj in enumerate(tokens):
-                occupied_j = set(dj.get_occupied())
-                clj = dj.__class__
-                virtual_j = set(dj.get_virtual())
-                for occ in occupied_i:
-                    for vir in virtual_j:
-                        if i == j:
-                            tokens[i] = cli.from_occupied(
-                                occupied_i - {occ} | {vir}
-                            )
-                        else:
-                            tokens[i] = cli.from_occupied(occupied_i - {occ})
-                            tokens[j] = clj.from_occupied(occupied_j | {vir})
-
-                        if all(d.value is not None for d in tokens):
-                            generated.add(
-                                tuple(
-                                    d.__class__.from_occupied(d._occupied)
-                                    for d in tokens
-                                )
-                            )
-                        tokens[j] = dj
-                        tokens[i] = di
-        """
-
-
         for (i, occ), in itertools.combinations(occupied, r=1):
             hole = tokens[i].__class__.from_occupied(
                 set(tokens[i].get_occupied()) - {occ}
@@ -321,6 +320,8 @@ def move_matches(tokens: list[Token], n: int = 1):
 
             tokens[i2] = ti2
             tokens[i1] = ti1
+    if n > 2:
+        raise NotImplementedError
 
     return generated
 
@@ -518,6 +519,10 @@ if __name__ == "__main__":
         help='List valid double replacements of expression'
     )
     parser.add_argument(
+        '--triple-moves', action='store_true',
+        help='List valid triple replacements of expression'
+    )
+    parser.add_argument(
         '--list-equalities', action='store_true',
         help='List equalities of given dimension'
     )
@@ -580,7 +585,7 @@ if __name__ == "__main__":
         print("Move one matchstick in expression")
         while expr := input("Expression: "):
             tokens = scan(expr)
-            moves = move_matches(tokens)
+            moves = move_matches(tokens, n=1)
             print("Valid moves")
             for m in moves:
                 print(" ".join(str(t) for t in m))
@@ -590,6 +595,15 @@ if __name__ == "__main__":
         while expr := input("Expression: "):
             tokens = scan(expr)
             moves = move_matches(tokens, n=2)
+            print("Valid moves")
+            for m in moves:
+                print(" ".join(str(t) for t in m))
+
+    if args.triple_moves:
+        print("Move three matchsticks in expression")
+        while expr := input("Expression: "):
+            tokens = scan(expr)
+            moves = move_matches(tokens, n=3)
             print("Valid moves")
             for m in moves:
                 print(" ".join(str(t) for t in m))
